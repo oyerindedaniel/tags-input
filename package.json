@@ -1,14 +1,24 @@
 {
   "name": "tags-input",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "turbo build",
-    "dev": "turbo dev",
+    "dev": "turbo run dev --parallel",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "devDependencies": {
-    "prettier": "^3.2.5",
+    "@ianvs/prettier-plugin-sort-imports": "^4.4.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.9",
+    "tailwindcss": "^3.4.16",
     "turbo": "^2.2.3",
     "typescript": "5.5.4"
   },
