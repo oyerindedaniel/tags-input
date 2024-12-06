@@ -43,7 +43,7 @@ interface TagsInputProps<T extends ExtendedObject<Primitive>>
   maxTags?: number // Maximum number of tags
   minTags?: number // Minimum number of tags
   allowDuplicates?: boolean // Whether duplicates are allowed
-  caseSensitiveDuplicates?: boolean // Case-sensitive duplicate checks
+  caseSensitiveDuplicates?: boolean // Case-sensitive duplicate checks true -> "allowed" | false -> "not-allowed"
   truncateTags?: number // Maximum characters/words for each tag
   disabled?: boolean // Disable the entire component
   readOnly?: boolean // Prevent adding/removing tags
@@ -52,9 +52,10 @@ interface TagsInputProps<T extends ExtendedObject<Primitive>>
   > // Keyboard commands mapping
 }
 
-const defaultKeyboardCommands: {
-  [K in React.KeyboardEvent["key"]]?: "add" | "remove"
-} = {
+const defaultKeyboardCommands: Record<
+  React.KeyboardEvent["key"],
+  "add" | "remove"
+> = {
   Enter: "add",
   Backspace: "remove",
 }
@@ -67,6 +68,8 @@ interface TagsInputItemProps
 }
 interface TagsInputItemTextProps
   extends React.HTMLAttributes<HTMLSpanElement> {}
+interface TagsInputItemGroupProps
+  extends React.HTMLAttributes<HTMLDivElement> {}
 interface TagsInputItemDeleteProps
   extends React.HTMLAttributes<HTMLButtonElement> {}
 interface TagsInputInputProps
@@ -152,8 +155,8 @@ const TagsInput = forwardRefWithGenerics(
       idKey = "id",
       maxTags,
       minTags,
-      allowDuplicates = true,
-      caseSensitiveDuplicates = true,
+      allowDuplicates = false,
+      caseSensitiveDuplicates = false,
       truncateTags,
       disabled = false,
       readOnly = false,
@@ -313,7 +316,7 @@ const TagsInput = forwardRefWithGenerics(
       >
         <div
           ref={ref}
-          className={cn("flex items-center space-x-2", className)}
+          className={cn("flex flex-col space-y-2", className)}
           {...props}
         >
           {children}
@@ -324,6 +327,20 @@ const TagsInput = forwardRefWithGenerics(
 )
 
 TagsInput.displayName = "TagsInput"
+
+const TagsInputItemGroup: React.FC<TagsInputItemGroupProps> = ({
+  className,
+  children,
+  ...props
+}) => {
+  return (
+    <div className={cn("flex items-center space-x-2", className)} {...props}>
+      {children}
+    </div>
+  )
+}
+
+TagsInputItemGroup.displayName = "TagsInputItemGroup"
 
 const TagsInputItemContext = React.createContext<{ keyIndex: number } | null>(
   null
@@ -423,7 +440,7 @@ const TagsInputItem = React.forwardRef<HTMLDivElement, TagsInputItemProps>(
           onFocus={() => focusTag(keyIndex)}
           onKeyDown={handleTagKeyDown}
           className={cn(
-            "flex items-center rounded px-2 py-1",
+            "rounded border-transparent bg-primary px-2 py-1 text-primary-foreground",
             className,
             isTagFocused(keyIndex) && "bg-blue-200"
           )}
@@ -444,7 +461,7 @@ const TagsInputItemText: React.FC<TagsInputItemTextProps> = ({
   ...props
 }) => {
   return (
-    <span className={cn("text-sm", className)} {...props}>
+    <span className={cn("flex items-center text-sm", className)} {...props}>
       {children}
     </span>
   )
@@ -454,7 +471,7 @@ TagsInputItemText.displayName = "TagsInputItemText"
 
 const TagsInputItemDelete = React.forwardRef<
   React.ElementRef<typeof Button>,
-  React.ComponentProps<typeof Button> & { tagId: Primitive }
+  React.ComponentProps<typeof Button>
 >(({ className, ...props }, ref) => {
   const { removeTag, isTagNonInteractive } = useTagsInputContext()
 
@@ -472,7 +489,7 @@ const TagsInputItemDelete = React.forwardRef<
   return (
     <Button
       ref={ref}
-      variant="destructive"
+      variant="ghost"
       size="icon"
       className={cn("ml-2 h-6 w-6", className)}
       onClick={handleRemove}
@@ -497,18 +514,18 @@ const TagsInputInput = React.forwardRef<
       className,
       disabled = false,
       readOnly = false,
-      delimiters = [Delimiters.Comma],
+      delimiters = [Delimiters.Comma, Delimiters.Space],
       ...props
     },
     ref
   ) => {
-    const { addTag } = useTagsInputContext()
+    const { addTag, inputRef: inputParentRef } = useTagsInputContext()
 
     const isInputNonInteractive = disabled || readOnly
 
     const inputRef = React.useRef<HTMLInputElement>(null)
 
-    const combinedRef = useCombinedRefs(ref, inputRef)
+    const combinedRef = useCombinedRefs(ref, inputRef, inputParentRef)
 
     const useDelimiterRegex = (delimiters: Delimiters[]): RegExp => {
       return React.useMemo(() => {
@@ -539,11 +556,11 @@ const TagsInputInput = React.forwardRef<
 
     const handleInputKeyDown = React.useCallback(
       (e: React.KeyboardEvent<HTMLInputElement>) => {
-        e.preventDefault()
         if (isInputNonInteractive || !inputRef.current) return
 
         const command = defaultKeyBindings[e.key]
         if (command === defaultKeyBindings.Enter) {
+          e.preventDefault()
           processInputValue(inputRef.current.value)
           inputRef.current.value = ""
         }
@@ -581,6 +598,7 @@ TagsInputInput.displayName = "TagsInputInput"
 
 export {
   TagsInput,
+  TagsInputItemGroup,
   TagsInputItem,
   TagsInputItemText,
   TagsInputItemDelete,

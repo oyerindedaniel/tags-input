@@ -5,10 +5,14 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
   "include": [
     "next-env.d.ts",
+    ".eslintrc.cjs",
     "next.config.mjs",
     "**/*.ts",
     "**/*.tsx",

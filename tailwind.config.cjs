@@ -6,7 +6,8 @@ module.exports = {
     "app/**/*.{ts,tsx}",
     "components/**/*.{ts,tsx}",
     // packages content
-    "packages/ui/src/**/*.{js,ts,jsx,tsx}",
+    "../../packages/ui/src/**/*.{js,ts,jsx,tsx}",
+    "../../packages/tags/src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {

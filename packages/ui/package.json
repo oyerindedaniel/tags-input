@@ -9,7 +9,9 @@
     "./input": "./src/components/ui/input.tsx",
     "./label": "./src/components/ui/label.tsx",
     "./separator": "./src/components/ui/separator.tsx",
-    "./button": "./src/components/ui/button.tsx"
+    "./button": "./src/components/ui/button.tsx",
+    "./toaster": "./src/components/ui/toaster.tsx",
+    "./use-toast": "./src/hooks/use-toast.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",
@@ -27,14 +29,18 @@
     "typescript": "5.5.4"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "react": "^18.2.0",
+    "react-hook-form": "^7.53.2",
     "tailwind-merge": "^2.5.5",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.23.8"
   }
 }

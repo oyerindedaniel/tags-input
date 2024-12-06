@@ -14,11 +14,16 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,mdx}\" --cache"
   },
   "dependencies": {
-    "@repo/ui": "workspace:*",
+    "@hookform/resolvers": "^3.9.1",
     "@repo/tags": "workspace:*",
+    "@repo/ui": "workspace:*",
+    "clsx": "^2.1.1",
     "next": "14.2.6",
     "react": "18.3.1",
-    "react-dom": "18.3.1"
+    "react-dom": "18.3.1",
+    "react-hook-form": "^7.53.2",
+    "tailwind-merge": "^2.5.5",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
