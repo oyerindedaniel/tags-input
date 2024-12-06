@@ -1,12 +1,13 @@
-import React, {
-  createContext,
-  forwardRef,
-  KeyboardEvent,
-  useContext,
-} from "react"
-import { twMerge } from "tailwind-merge"
+"use client"
+
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { X } from "lucide-react"
 
 import useCombinedRefs from "@repo/hooks/use-combined-ref"
+import { Button } from "@repo/ui/button"
+import { Input } from "@repo/ui/input"
+import { cn } from "@repo/ui/utils"
 
 type Primitive = string | number
 
@@ -19,11 +20,11 @@ type ExtendedObject<T extends Primitive, K extends Primitive = T> = {
 // Context Type
 interface TagsInputContextType<T extends ExtendedObject<Primitive>> {
   tags: T[]
-  addTag: (tag: Primitive) => void
+  addTag: (tag: T["value"]) => void
   removeTag: (index: number) => void
-  disabled: boolean
-  readOnly: boolean
+  inputRef: React.RefObject<HTMLInputElement>
   focusedIndex: number | null
+  isTagNonInteractive: boolean
   focusTag: (index: number | null) => void
   isTagFocused: (index: number) => boolean
 }
@@ -36,7 +37,7 @@ interface TagsInputProps<T extends ExtendedObject<Primitive>>
   > {
   value?: T[]
   defaultValue?: T[]
-  onChange: (tags: T[]) => void
+  onChange?: (tags: T[]) => void
   parseInput?: (input: T) => T | null // Function to parse input
   idKey?: keyof T
   maxTags?: number // Maximum number of tags
@@ -59,7 +60,11 @@ const defaultKeyboardCommands: {
 }
 
 // Subcomponent Props
-interface TagsInputItemProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface TagsInputItemProps
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, ""> {
+  asChild?: boolean
+  keyIndex: number
+}
 interface TagsInputItemTextProps
   extends React.HTMLAttributes<HTMLSpanElement> {}
 interface TagsInputItemDeleteProps
@@ -106,14 +111,14 @@ const defaultKeyBindings: Record<
   ArrowRight: TagsInputKeyActions.NavigateRight,
 }
 
-const TagsInputContext = createContext<TagsInputContextType<
+const TagsInputContext = React.createContext<TagsInputContextType<
   ExtendedObject<Primitive>
 > | null>(null)
 
 const useTagsInputContext = <
   T extends ExtendedObject<Primitive>,
 >(): TagsInputContextType<T> => {
-  const context = useContext(
+  const context = React.useContext(
     TagsInputContext as unknown as React.Context<TagsInputContextType<T>>
   )
 
@@ -133,7 +138,7 @@ const forwardRefWithGenerics = <
 ): React.ForwardRefExoticComponent<
   React.PropsWithoutRef<P> & React.RefAttributes<R>
 > => {
-  return forwardRef<R, P>(render)
+  return React.forwardRef<R, P>(render)
 }
 
 const TagsInput = forwardRefWithGenerics(
@@ -158,7 +163,8 @@ const TagsInput = forwardRefWithGenerics(
     }: TagsInputProps<T>,
     ref: React.Ref<HTMLDivElement>
   ) => {
-    const [tags, setTags] = React.useState<T[]>(value || defaultValue)
+    const [_tags, _setTags] = React.useState<T[]>(defaultValue)
+
     const [originalTags, setOriginalTags] = React.useState<T["value"][]>(
       defaultValue.map((t) => t.value)
     )
@@ -166,7 +172,20 @@ const TagsInput = forwardRefWithGenerics(
     const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null)
     const inputRef = React.useRef<HTMLInputElement>(null)
 
-    const stableOnChange = React.useCallback(onChange, [])
+    const isTagNonInteractive = disabled || readOnly
+
+    const tags = value ?? _tags
+
+    const setTags = React.useCallback(
+      (updatedTags: T[]) => {
+        if (onChange) {
+          onChange(updatedTags)
+        } else {
+          _setTags(updatedTags)
+        }
+      },
+      [onChange] // Only depends on onChange
+    )
 
     const focusTag = React.useCallback((index: number | null) => {
       setFocusedIndex(index)
@@ -212,8 +231,8 @@ const TagsInput = forwardRefWithGenerics(
     // Reverse truncation if `truncateTags` is removed
     const reverseTruncateTags = React.useCallback(() => {
       if (truncateTags === undefined) {
-        setTags((prevTags) =>
-          prevTags.map((tag, index) => ({
+        setTags(
+          tags.map((tag, index) => ({
             ...tag,
             value: originalTags[index] ?? tag.value,
           }))
@@ -242,11 +261,9 @@ const TagsInput = forwardRefWithGenerics(
         setOriginalTags((prev) => [...prev, tag]) // Keeps track of original tags
         const updatedTags = [...tags, newTag]
         setTags(updatedTags)
-        stableOnChange?.(updatedTags)
       },
       [
         tags,
-        stableOnChange,
         idKey,
         allowDuplicates,
         isDuplicate,
@@ -262,9 +279,8 @@ const TagsInput = forwardRefWithGenerics(
         setOriginalTags((prev) => prev.filter((_, i) => i !== index))
         const updatedTags = tags.filter((_, i) => i !== index)
         setTags(updatedTags)
-        stableOnChange?.(updatedTags)
       },
-      [tags, stableOnChange]
+      [tags]
     )
 
     React.useEffect(() => {
@@ -281,6 +297,7 @@ const TagsInput = forwardRefWithGenerics(
         readOnly,
         focusedIndex,
         focusTag,
+        isTagNonInteractive,
         isTagFocused,
       }),
       [tags, addTag, removeTag]
@@ -296,7 +313,7 @@ const TagsInput = forwardRefWithGenerics(
       >
         <div
           ref={ref}
-          className={twMerge("flex items-center space-x-2", className)}
+          className={cn("flex items-center space-x-2", className)}
           {...props}
         >
           {children}
@@ -308,45 +325,113 @@ const TagsInput = forwardRefWithGenerics(
 
 TagsInput.displayName = "TagsInput"
 
+const TagsInputItemContext = React.createContext<{ keyIndex: number } | null>(
+  null
+)
+
+const useTagsInputItemContext = () => {
+  const context = React.useContext(TagsInputItemContext)
+
+  if (!context) {
+    throw new Error(
+      "TagsInputItem components must be used within a TagsInputItem."
+    )
+  }
+
+  return context
+}
+
 const TagsInputItem = React.forwardRef<HTMLDivElement, TagsInputItemProps>(
-  ({ className, children, ...props }, ref) => {
-    const { focusTag, isTagFocused, removeTag, disabled, tags } =
-      useTagsInputContext()
+  ({ className, children, keyIndex, asChild, ...props }, ref) => {
+    const {
+      focusTag,
+      isTagFocused,
+      removeTag,
+      inputRef,
+      tags,
+      isTagNonInteractive,
+    } = useTagsInputContext()
 
-    // const handleKeyDown = React.useCallback(
-    //   (e: React.KeyboardEvent<HTMLDivElement>) => {
-    //     if (disabled) return
+    const Comp = asChild ? Slot : "div"
 
-    //     if (e.key === "Backspace") {
-    //       removeTag(tags.findIndex((tag) => isTagFocused(tag)))
-    //     } else if (e.key === "ArrowLeft") {
-    //       focusTag((prev) =>
-    //         prev !== null ? Math.max(0, prev - 1) : tags.length - 1
-    //       )
-    //     } else if (e.key === "ArrowRight") {
-    //       focusTag((prev) =>
-    //         prev !== null ? Math.min(tags.length - 1, prev + 1) : 0
-    //       )
-    //     }
-    //   },
-    //   [focusTag, isTagFocused, removeTag, tags, disabled]
-    // )
+    const focusInput = () => {
+      if (!inputRef.current) return
+      inputRef.current.focus()
+    }
+
+    const handleTagKeyDown = React.useCallback(
+      (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (isTagNonInteractive) return
+
+        const action = defaultKeyBindings[e.key]
+        if (!action) return
+
+        switch (action) {
+          case TagsInputKeyActions.Remove:
+            // Removes the current tag on Backspace
+            if (isTagFocused(keyIndex)) {
+              e.preventDefault()
+              removeTag(keyIndex)
+              focusTag(Math.max(0, keyIndex - 1)) // Focus the previous tag if it exists
+            }
+            break
+
+          case TagsInputKeyActions.NavigateLeft:
+            // Focus the previous tag
+
+            e.preventDefault()
+            focusTag(Math.max(0, keyIndex - 1))
+
+            break
+
+          case TagsInputKeyActions.NavigateRight:
+            // Focuses the next tag or the input if at the end
+            if (keyIndex < tags.length - 1) {
+              e.preventDefault()
+              focusTag(keyIndex + 1)
+            } else {
+              e.preventDefault()
+              focusInput() // Focus the input if at the last tag
+            }
+            break
+
+          default:
+            break
+        }
+      },
+      [
+        isTagNonInteractive,
+        keyIndex,
+        tags,
+        isTagFocused,
+        removeTag,
+        focusTag,
+        focusInput,
+      ]
+    )
+
+    const contextValue = React.useMemo<{ keyIndex: number }>(
+      () => ({ keyIndex }),
+      [keyIndex]
+    )
 
     return (
-      <div
-        ref={ref}
-        tabIndex={0}
-        // onFocus={() => focusTag(tags.findIndex((tag) => isTagFocused(tag)))}
-        // onKeyDown={handleKeyDown}
-        // className={twMerge("flex items-center rounded px-2 py-1", className, {
-        //   "bg-blue-200": isTagFocused(
-        //     tags.findIndex((tag) => isTagFocused(tag))
-        //   ),
-        // })}
-        {...props}
-      >
-        {children}
-      </div>
+      <TagsInputItemContext.Provider value={contextValue}>
+        <Comp
+          ref={ref}
+          tabIndex={0}
+          onFocus={() => focusTag(keyIndex)}
+          onKeyDown={handleTagKeyDown}
+          className={cn(
+            "flex items-center rounded px-2 py-1",
+            className,
+            isTagFocused(keyIndex) && "bg-blue-200"
+          )}
+          {...props}
+        >
+          {children}
+        </Comp>
+      </TagsInputItemContext.Provider>
     )
   }
 )
@@ -359,7 +444,7 @@ const TagsInputItemText: React.FC<TagsInputItemTextProps> = ({
   ...props
 }) => {
   return (
-    <span className={twMerge("text-sm", className)} {...props}>
+    <span className={cn("text-sm", className)} {...props}>
       {children}
     </span>
   )
@@ -368,27 +453,48 @@ const TagsInputItemText: React.FC<TagsInputItemTextProps> = ({
 TagsInputItemText.displayName = "TagsInputItemText"
 
 const TagsInputItemDelete = React.forwardRef<
-  HTMLButtonElement,
-  TagsInputItemDeleteProps
->(({ className, children, ...props }, ref) => {
+  React.ElementRef<typeof Button>,
+  React.ComponentProps<typeof Button> & { tagId: Primitive }
+>(({ className, ...props }, ref) => {
+  const { removeTag, isTagNonInteractive } = useTagsInputContext()
+
+  const { keyIndex } = useTagsInputItemContext()
+
+  const handleRemove = React.useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation()
+      if (isTagNonInteractive) return
+      removeTag(keyIndex)
+    },
+    [removeTag, keyIndex, isTagNonInteractive]
+  )
+
   return (
-    <button
+    <Button
       ref={ref}
-      className={twMerge("ml-2 text-red-500", className)}
+      variant="destructive"
+      size="icon"
+      className={cn("ml-2 h-6 w-6", className)}
+      onClick={handleRemove}
+      disabled={isTagNonInteractive}
       {...props}
     >
-      ×
-    </button>
+      <X />
+    </Button>
   )
 })
 
 TagsInputItemDelete.displayName = "TagsInputItemDelete"
 
-const TagsInputInput = React.forwardRef<HTMLInputElement, TagsInputInputProps>(
+TagsInputItemDelete.displayName = "TagsInputItemDelete"
+
+const TagsInputInput = React.forwardRef<
+  React.ElementRef<typeof Input>,
+  React.ComponentProps<typeof Input> & { delimiters?: Delimiters[] }
+>(
   (
     {
       className,
-      children,
       disabled = false,
       readOnly = false,
       delimiters = [Delimiters.Comma],
@@ -415,11 +521,7 @@ const TagsInputInput = React.forwardRef<HTMLInputElement, TagsInputInputProps>(
 
     const delimiterRegex = useDelimiterRegex(delimiters)
 
-    const processInputValue = (
-      value: string,
-      delimiterRegex: RegExp,
-      addTag: (tag: string) => void
-    ) => {
+    const processInputValue = (value: string) => {
       const trimmedValue = value.trim()
 
       if (!trimmedValue) return
@@ -437,11 +539,12 @@ const TagsInputInput = React.forwardRef<HTMLInputElement, TagsInputInputProps>(
 
     const handleInputKeyDown = React.useCallback(
       (e: React.KeyboardEvent<HTMLInputElement>) => {
+        e.preventDefault()
         if (isInputNonInteractive || !inputRef.current) return
 
         const command = defaultKeyBindings[e.key]
         if (command === defaultKeyBindings.Enter) {
-          processInputValue(inputRef.current.value, delimiterRegex, addTag)
+          processInputValue(inputRef.current.value)
           inputRef.current.value = ""
         }
       },
@@ -454,20 +557,20 @@ const TagsInputInput = React.forwardRef<HTMLInputElement, TagsInputInputProps>(
 
         const pasteData = e.clipboardData.getData("text")
 
-        processInputValue(pasteData, delimiterRegex, addTag)
+        processInputValue(pasteData)
         e.preventDefault()
       },
       [addTag, isInputNonInteractive]
     )
 
     return (
-      <input
+      <Input
         ref={combinedRef}
         disabled={disabled}
         readOnly={readOnly}
         onKeyDown={handleInputKeyDown}
         onPaste={handleInputPaste}
-        className={twMerge("flex-grow bg-transparent outline-none", className)}
+        className={cn("flex-grow", className)}
         {...props}
       />
     )
