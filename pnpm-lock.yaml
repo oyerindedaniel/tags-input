@@ -75,6 +75,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@repo/tags':
+        specifier: workspace:*
+        version: link:../../packages/tags
       '@repo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -146,7 +149,7 @@ importers:
         specifier: 5.5.4
         version: 5.5.4
 
-  packages/tags:
+  packages/hooks:
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
@@ -172,6 +175,49 @@ importers:
       eslint:
         specifier: ^8.57.0
         version: 8.57.1
+      tailwindcss:
+        specifier: ^3.4.16
+        version: 3.4.16
+      typescript:
+        specifier: 5.5.4
+        version: 5.5.4
+
+  packages/tags:
+    dependencies:
+      '@repo/hooks':
+        specifier: workspace:*
+        version: link:../hooks
+      tailwind-merge:
+        specifier: ^2.5.5
+        version: 2.5.5
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@turbo/gen':
+        specifier: ^1.12.4
+        version: 1.13.4(@types/node@20.16.5)(typescript@5.5.4)
+      '@types/eslint':
+        specifier: ^8.56.5
+        version: 8.56.12
+      '@types/node':
+        specifier: ^20.11.24
+        version: 20.16.5
+      '@types/react':
+        specifier: ^18.2.61
+        version: 18.3.6
+      '@types/react-dom':
+        specifier: ^18.2.19
+        version: 18.3.0
+      eslint:
+        specifier: ^8.57.0
+        version: 8.57.1
+      tailwindcss:
+        specifier: ^3.4.16
+        version: 3.4.16
       typescript:
         specifier: 5.5.4
         version: 5.5.4
@@ -827,6 +873,7 @@ packages:
 
   /@turbo/workspaces@1.13.4:
     resolution: {integrity: sha512-3uYg2b5TWCiupetbDFMbBFMHl33xQTvp5DNg0fZSYal73Z9AlFH9yWabHWMYw6ywmwM1evkYRpTVA2n7GgqT5A==}
+    hasBin: true
     dependencies:
       chalk: 2.4.2
       commander: 10.0.1
@@ -5128,6 +5175,10 @@ packages:
       '@pkgr/core': 0.1.1
       tslib: 2.7.0
     dev: true
+
+  /tailwind-merge@2.5.5:
+    resolution: {integrity: sha512-0LXunzzAZzo0tEPxV3I297ffKZPlKDrjj7NXphC8V5ak9yHC5zRmxnOe2m/Rd/7ivsOMJe3JZ2JVocoDdQTRBA==}
+    dev: false
 
   /tailwindcss@3.4.16:
     resolution: {integrity: sha512-TI4Cyx7gDiZ6r44ewaJmt0o6BrMCT5aK5e0rmJ/G9Xq3w7CX/5VXl/zIPEJZFUK5VEqwByyhqNPycPlvcK4ZNw==}

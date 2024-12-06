@@ -1,5 +1,5 @@
 {
-  "name": "@repo/tags",
+  "name": "@repo/hooks",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,7 +7,9 @@
     "format:write": "prettier --write \"**/*.{ts,tsx,mdx}\" --cache",
     "format:check": "prettier --check \"**/*.{ts,tsx,mdx}\" --cache"
   },
-  "exports": {},
+  "exports": {
+    "./use-combined-ref": "./src/use-combined-ref.ts"
+  },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
@@ -20,8 +22,5 @@
     "tailwindcss": "^3.4.16",
     "typescript": "5.5.4"
   },
-  "dependencies": {
-    "@repo/hooks": "workspace:*",
-    "tailwind-merge": "^2.5.5"
-  }
+  "dependencies": {}
 }
