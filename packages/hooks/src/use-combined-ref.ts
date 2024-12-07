@@ -17,4 +17,4 @@ function useCombinedRefs<T>(...refs: React.Ref<T>[]): React.RefCallback<T> {
   )
 }
 
-export default useCombinedRefs
+export { useCombinedRefs }

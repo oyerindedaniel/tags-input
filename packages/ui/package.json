@@ -11,6 +11,9 @@
     "./separator": "./src/components/ui/separator.tsx",
     "./button": "./src/components/ui/button.tsx",
     "./toaster": "./src/components/ui/toaster.tsx",
+    "./command": "./src/components/ui/command.tsx",
+    "./popover": "./src/components/ui/popover.tsx",
+    "./dialog": "./src/components/ui/dialog.tsx",
     "./use-toast": "./src/hooks/use-toast.ts"
   },
   "scripts": {
@@ -30,12 +33,15 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
+    "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-popover": "^1.1.2",
     "@radix-ui/react-separator": "^1.1.0",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "cmdk": "1.0.0",
     "lucide-react": "^0.468.0",
     "react": "^18.2.0",
     "react-hook-form": "^7.53.2",

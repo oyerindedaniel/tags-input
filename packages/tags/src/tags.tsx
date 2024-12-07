@@ -4,23 +4,29 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { X } from "lucide-react"
 
-import useCombinedRefs from "@repo/hooks/use-combined-ref"
+import { useCombinedRefs } from "@repo/hooks/use-combined-ref"
+import { useControllableState } from "@repo/hooks/use-controllable-state"
 import { Button } from "@repo/ui/button"
 import { Input } from "@repo/ui/input"
 import { cn } from "@repo/ui/utils"
 
 type Primitive = string | number
 
-type ExtendedObject<T extends Primitive, K extends Primitive = T> = {
-  id: T
-  value: K
+type Wrapper<T extends Primitive> = {
+  value: T
+  _isPrimitiveWrapper?: true
+}
+
+type ExtendedObject<T extends Primitive> = Wrapper<T> & {
   [key: string]: unknown
 }
 
+type Tag<T extends Primitive> = T | Wrapper<T> | ExtendedObject<T>
+
 // Context Type
-interface TagsInputContextType<T extends ExtendedObject<Primitive>> {
+interface TagsInputContextType<T extends Tag<Primitive>> {
   tags: T[]
-  addTag: (tag: T["value"]) => void
+  addTag: (tag: T | T[]) => void
   removeTag: (index: number) => void
   inputRef: React.RefObject<HTMLInputElement>
   focusedIndex: number | null
@@ -30,21 +36,19 @@ interface TagsInputContextType<T extends ExtendedObject<Primitive>> {
 }
 
 // Component Props
-interface TagsInputProps<T extends ExtendedObject<Primitive>>
+interface TagsInputProps<T extends Tag<Primitive>>
   extends Omit<
     React.HTMLAttributes<HTMLDivElement>,
     "onChange" | "defaultValue"
   > {
-  value?: T[]
-  defaultValue?: T[]
-  onChange?: (tags: T[]) => void
+  value: T[]
+  onChange: (updatedTags: T[] | ((prevTags: T[]) => T[])) => void
   parseInput?: (input: T) => T | null // Function to parse input
-  idKey?: keyof T
+  idKey?: string
   maxTags?: number // Maximum number of tags
   minTags?: number // Minimum number of tags
   allowDuplicates?: boolean // Whether duplicates are allowed
   caseSensitiveDuplicates?: boolean // Case-sensitive duplicate checks true -> "allowed" | false -> "not-allowed"
-  truncateTags?: number // Maximum characters/words for each tag
   disabled?: boolean // Disable the entire component
   readOnly?: boolean // Prevent adding/removing tags
   keyboardCommands?: Partial<
@@ -60,7 +64,6 @@ const defaultKeyboardCommands: Record<
   Backspace: "remove",
 }
 
-// Subcomponent Props
 interface TagsInputItemProps
   extends Omit<React.HTMLAttributes<HTMLDivElement>, ""> {
   asChild?: boolean
@@ -76,14 +79,6 @@ interface TagsInputInputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {
   delimiters?: Delimiters[]
 }
-
-// Context
-// function createContextWrapper<T extends Primitive>(
-//   initial?: TagsInputContextType<T>
-// ) {
-//   return createContext<TagsInputContextType<T> | undefined>(initial)
-// }
-// const TagsInputContext = createContextWrapper()
 
 export enum TagsInputKeyActions {
   Add = "add",
@@ -115,11 +110,11 @@ const defaultKeyBindings: Record<
 }
 
 const TagsInputContext = React.createContext<TagsInputContextType<
-  ExtendedObject<Primitive>
+  Tag<Primitive>
 > | null>(null)
 
 const useTagsInputContext = <
-  T extends ExtendedObject<Primitive>,
+  T extends Tag<Primitive>,
 >(): TagsInputContextType<T> => {
   const context = React.useContext(
     TagsInputContext as unknown as React.Context<TagsInputContextType<T>>
@@ -133,7 +128,7 @@ const useTagsInputContext = <
 }
 
 const forwardRefWithGenerics = <
-  T extends ExtendedObject<Primitive>,
+  T extends Tag<Primitive>,
   P extends TagsInputProps<T>,
   R extends HTMLDivElement,
 >(
@@ -145,19 +140,17 @@ const forwardRefWithGenerics = <
 }
 
 const TagsInput = forwardRefWithGenerics(
-  <T extends ExtendedObject<Primitive>>(
+  <T extends Tag<Primitive>>(
     {
-      value,
-      defaultValue = [],
+      value = [],
       onChange,
       className,
       children,
-      idKey = "id",
+      idKey = "_id",
       maxTags,
       minTags,
       allowDuplicates = false,
       caseSensitiveDuplicates = false,
-      truncateTags,
       disabled = false,
       readOnly = false,
       keyboardCommands = defaultKeyboardCommands,
@@ -166,28 +159,76 @@ const TagsInput = forwardRefWithGenerics(
     }: TagsInputProps<T>,
     ref: React.Ref<HTMLDivElement>
   ) => {
-    const [_tags, _setTags] = React.useState<T[]>(defaultValue)
+    const initializeTags = (values: T[]): T[] =>
+      values.map((value) =>
+        typeof value === "object" && value !== null
+          ? ({ ...value, [idKey]: crypto.randomUUID() } as T)
+          : ({
+              [idKey]: crypto.randomUUID(),
+              value,
+              _isPrimitiveWrapper: true,
+            } as T)
+      )
 
-    const [originalTags, setOriginalTags] = React.useState<T["value"][]>(
-      defaultValue.map((t) => t.value)
-    )
+    const [_tags, _setTags] = useControllableState({
+      prop: initializeTags(value),
+      onChange: onChange,
+    })
 
     const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null)
     const inputRef = React.useRef<HTMLInputElement>(null)
 
     const isTagNonInteractive = disabled || readOnly
 
-    const tags = value ?? _tags
+    const tags = _tags ?? []
 
     const setTags = React.useCallback(
-      (updatedTags: T[]) => {
-        if (onChange) {
-          onChange(updatedTags)
-        } else {
-          _setTags(updatedTags)
+      (updatedTags: T[] | ((prevTags: T[]) => T[])) => {
+        console.log("danie")
+        // Type guard to check if a tag is an object (ExtendedObject<Primitive>)
+        const isExtendedObject = (
+          tag: unknown
+        ): tag is ExtendedObject<Primitive> => {
+          return typeof tag === "object" && tag !== null && "value" in tag
         }
+
+        // Sanitize tags by removing the `idKey` only from ExtendedObject types
+        const sanitizeTags = (tags: T[]): T[] =>
+          tags.map((tag) => {
+            if (isExtendedObject(tag)) {
+              // Destructure to exclude `idKey`
+              const {
+                [idKey]: _,
+                _isPrimitiveWrapper,
+                ...rest
+              } = tag as ExtendedObject<Primitive>
+
+              // If it's a primitive wrapper, return the primitive value
+              if (_isPrimitiveWrapper) {
+                console.log("in here")
+                return rest.value as T
+              }
+              console.log(rest)
+              return rest as T
+            }
+            console.log("outside")
+            return tag
+          })
+
+        const resolveTags = (prevTags: T[]): T[] => {
+          const tags =
+            typeof updatedTags === "function"
+              ? updatedTags(prevTags)
+              : updatedTags
+          return sanitizeTags(tags)
+        }
+
+        _setTags((prevTags) => {
+          console.log("charis", resolveTags(prevTags ?? []))
+          return resolveTags(prevTags ?? [])
+        })
       },
-      [onChange] // Only depends on onChange
+      [onChange, _setTags, idKey]
     )
 
     const focusTag = React.useCallback((index: number | null) => {
@@ -202,93 +243,72 @@ const TagsInput = forwardRefWithGenerics(
       [focusedIndex]
     )
 
+    // Helper function to normalize tag values for comparison
+    const normalizeTag = (tag: T, caseSensitive: boolean): string => {
+      if (typeof tag === "object" && tag !== null) {
+        return caseSensitive
+          ? String(tag.value)
+          : String(tag.value).toLowerCase()
+      }
+      return caseSensitive ? String(tag) : String(tag).toLowerCase()
+    }
+
     // Check for duplicates based on the original tag
     const isDuplicate = React.useCallback(
-      (tag: T["value"]) => {
-        const tagValue = caseSensitiveDuplicates
-          ? String(tag)
-          : String(tag).toLowerCase()
-        return tags.some((t) => {
-          const existingTag = caseSensitiveDuplicates
-            ? String(t.value)
-            : String(t.value).toLowerCase()
-          return tagValue === existingTag
+      (tag: T | T[]) => {
+        const tagsToCheck = Array.isArray(tag) ? tag : [tag]
+        const normalizedTags = tags.map((t) =>
+          normalizeTag(t, caseSensitiveDuplicates)
+        )
+
+        return tagsToCheck.some((singleTag) => {
+          const normalizedTag = normalizeTag(singleTag, caseSensitiveDuplicates)
+          return normalizedTags.includes(normalizedTag)
         })
       },
       [tags, caseSensitiveDuplicates]
     )
 
-    const truncateTag = React.useCallback(
-      (tag: T["value"]) => {
-        if (typeof tag !== "string" || truncateTags === undefined) return tag
-        const words = tag.split(" ")
-        return truncateTags <= 0
-          ? tag
-          : words.length > truncateTags
-            ? `${words.slice(0, truncateTags).join(" ")}...`
-            : tag
-      },
-      [truncateTags]
-    )
-
-    // Reverse truncation if `truncateTags` is removed
-    const reverseTruncateTags = React.useCallback(() => {
-      if (truncateTags === undefined) {
-        setTags(
-          tags.map((tag, index) => ({
-            ...tag,
-            value: originalTags[index] ?? tag.value,
-          }))
-        )
-      }
-    }, [truncateTags, originalTags])
-
     const addTag = React.useCallback(
-      (tag: T["value"]) => {
+      (tag: T | T[]) => {
         if (
           disabled ||
           readOnly ||
           tag == null ||
-          (maxTags && tags.length >= maxTags)
-        )
+          (maxTags && tags.length >= maxTags) ||
+          (minTags && tags.length < minTags)
+        ) {
           return
+        }
 
-        if (!allowDuplicates && isDuplicate(tag)) return
+        const tagsToAdd = Array.isArray(tag) ? tag : [tag]
 
-        const truncatedTag = truncateTag(tag)
-        const newTag = {
-          [idKey]: crypto.randomUUID(),
-          value: truncatedTag,
-        } as T
+        const newTags = tagsToAdd
+          .filter((singleTag) => allowDuplicates || !isDuplicate(singleTag))
+          .map((singleTag) =>
+            typeof singleTag === "object" && singleTag !== null
+              ? { ...singleTag, [idKey]: crypto.randomUUID() }
+              : ({
+                  [idKey]: crypto.randomUUID(),
+                  value: singleTag,
+                  _isPrimitiveWrapper: true,
+                } as T)
+          )
 
-        setOriginalTags((prev) => [...prev, tag]) // Keeps track of original tags
-        const updatedTags = [...tags, newTag]
-        setTags(updatedTags)
+        if (newTags.length > 0) {
+          setTags((prevTags) => [...prevTags, ...newTags])
+        }
       },
-      [
-        tags,
-        idKey,
-        allowDuplicates,
-        isDuplicate,
-        maxTags,
-        truncateTag,
-        disabled,
-        readOnly,
-      ]
+      [tags, idKey, allowDuplicates, isDuplicate, maxTags, disabled, readOnly]
     )
 
     const removeTag = React.useCallback(
       (index: number) => {
-        setOriginalTags((prev) => prev.filter((_, i) => i !== index))
         const updatedTags = tags.filter((_, i) => i !== index)
         setTags(updatedTags)
       },
       [tags]
     )
-
-    React.useEffect(() => {
-      reverseTruncateTags()
-    }, [truncateTags, reverseTruncateTags])
 
     const contextValue = React.useMemo<TagsInputContextType<T>>(
       () => ({
@@ -308,11 +328,7 @@ const TagsInput = forwardRefWithGenerics(
 
     return (
       <TagsInputContext.Provider
-        value={
-          contextValue as unknown as TagsInputContextType<
-            ExtendedObject<Primitive>
-          >
-        }
+        value={contextValue as unknown as TagsInputContextType<Tag<Primitive>>}
       >
         <div
           ref={ref}
@@ -334,7 +350,10 @@ const TagsInputItemGroup: React.FC<TagsInputItemGroupProps> = ({
   ...props
 }) => {
   return (
-    <div className={cn("flex items-center space-x-2", className)} {...props}>
+    <div
+      className={cn("flex flex-wrap items-center gap-x-2 gap-y-1", className)}
+      {...props}
+    >
       {children}
     </div>
   )
@@ -440,7 +459,7 @@ const TagsInputItem = React.forwardRef<HTMLDivElement, TagsInputItemProps>(
           onFocus={() => focusTag(keyIndex)}
           onKeyDown={handleTagKeyDown}
           className={cn(
-            "rounded border-transparent bg-primary px-2 py-1 text-primary-foreground",
+            "flex items-center justify-between rounded-md border-transparent bg-primary px-2 py-[5px] text-primary-foreground",
             className,
             isTagFocused(keyIndex) && "bg-blue-200"
           )}
@@ -491,7 +510,7 @@ const TagsInputItemDelete = React.forwardRef<
       ref={ref}
       variant="ghost"
       size="icon"
-      className={cn("ml-2 h-6 w-6", className)}
+      className={cn("ml-2 h-5 w-5", className)}
       onClick={handleRemove}
       disabled={isTagNonInteractive}
       {...props}
@@ -544,11 +563,12 @@ const TagsInputInput = React.forwardRef<
       if (!trimmedValue) return
 
       if (delimiterRegex.test(trimmedValue)) {
-        trimmedValue
+        const tags = trimmedValue
           .split(delimiterRegex)
           .map((tag) => tag.trim())
           .filter(Boolean)
-          .forEach(addTag)
+
+        addTag(tags)
       } else {
         addTag(trimmedValue)
       }

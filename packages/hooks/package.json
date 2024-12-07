@@ -8,7 +8,9 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,mdx}\" --cache"
   },
   "exports": {
-    "./use-combined-ref": "./src/use-combined-ref.ts"
+    "./use-combined-ref": "./src/use-combined-ref.ts",
+    "./use-controllable-state": "./src/use-controllable-state.ts",
+    "./use-callback-ref": "./src/use-callback-ref.ts"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",

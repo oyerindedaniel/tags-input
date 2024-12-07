@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -26,24 +27,23 @@ import { toast } from "@repo/ui/use-toast"
 
 const FormSchema = z.object({
   tags: z.array(
-    z.object({
-      id: z.string({ message: "Each tag must have an id." }),
-      value: z
-        .string()
-        .min(2, { message: "Each tag value must be at least 2 characters." }),
-    })
+    z
+      .string()
+      .min(1, { message: "Each tag value must have at least 1 character." })
   ),
 })
-
-type tags = z.infer<typeof FormSchema>
 
 export default function Home() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      tags: [],
+      tags: ["dani", "Ddd"],
     },
   })
+
+  console.log(form.formState.errors)
+
+  console.log(form.watch("tags"))
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     toast({
@@ -54,6 +54,7 @@ export default function Home() {
         </pre>
       ),
     })
+    // form.reset()
   }
 
   return (
@@ -66,28 +67,28 @@ export default function Home() {
           <FormField
             control={form.control}
             name="tags"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tags</FormLabel>
-                <FormControl>
-                  <TagsInput value={field.value} onChange={field.onChange}>
-                    <TagsInputItemGroup>
-                      {field.value.map((tag, idx) => (
-                        <TagsInputItem keyIndex={idx}>
-                          <TagsInputItemText>
-                            <span>{tag.value}</span>
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormLabel>Tags</FormLabel>
+                  <FormControl>
+                    <TagsInput value={field.value} onChange={field.onChange}>
+                      <TagsInputItemGroup>
+                        {field.value.map((tag, idx) => (
+                          <TagsInputItem key={idx} keyIndex={idx}>
+                            <TagsInputItemText>{tag}</TagsInputItemText>
                             <TagsInputItemDelete />
-                          </TagsInputItemText>
-                        </TagsInputItem>
-                      ))}
-                    </TagsInputItemGroup>
-                    <TagsInputInput placeholder="Enter tags" />
-                  </TagsInput>
-                </FormControl>
-                <FormDescription>These are your tags</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
+                          </TagsInputItem>
+                        ))}
+                      </TagsInputItemGroup>
+                      <TagsInputInput placeholder="Enter tags" />
+                    </TagsInput>
+                  </FormControl>
+                  <FormDescription>These are your tags</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
           />
           <Button className="w-full" type="submit">
             Submit
