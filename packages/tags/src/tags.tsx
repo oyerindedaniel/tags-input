@@ -474,17 +474,20 @@ const TagsInputItem = React.forwardRef<HTMLDivElement, TagsInputItemProps>(
 
 TagsInputItem.displayName = "TagsInputItem"
 
-const TagsInputItemText: React.FC<TagsInputItemTextProps> = ({
-  className,
-  children,
-  ...props
-}) => {
+const TagsInputItemText = React.forwardRef<
+  HTMLDivElement,
+  TagsInputItemTextProps
+>(({ className, children, ...props }, ref) => {
   return (
-    <span className={cn("flex items-center text-sm", className)} {...props}>
+    <span
+      className={cn("flex items-center text-sm", className)}
+      ref={ref}
+      {...props}
+    >
       {children}
     </span>
   )
-}
+})
 
 TagsInputItemText.displayName = "TagsInputItemText"
 
