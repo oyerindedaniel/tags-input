@@ -198,7 +198,7 @@ const TagsInput = forwardRefWithGenerics(
           return resolveTags(prevTags ?? [])
         })
       },
-      [onChange, _setTags]
+      [_setTags]
     )
 
     // Helper function to normalize tag values for comparison
@@ -232,8 +232,7 @@ const TagsInput = forwardRefWithGenerics(
     const addTag = React.useCallback(
       (tag: T | T[]) => {
         if (
-          disabled ||
-          readOnly ||
+          isTagNonInteractive ||
           tag == null ||
           (maxTags && tags.length >= maxTags) ||
           (minTags && tags.length < minTags)
@@ -403,7 +402,7 @@ const TagsInputItem = React.forwardRef<HTMLDivElement, TagsInputItemProps>(
 
     const { keyIndex } = useTagsInputGroup()
 
-    const Comp = asChild ? Slot : "div"
+    const Comp = asChild ? Slot : "span"
 
     const itemRef = React.useRef<HTMLElement | null>(null)
 
@@ -411,10 +410,10 @@ const TagsInputItem = React.forwardRef<HTMLDivElement, TagsInputItemProps>(
       return { ...defaultKeyBindings, ...keyboardCommands }
     }, [defaultKeyBindings, keyboardCommands])
 
-    const focusInput = () => {
+    const focusInput = React.useCallback(() => {
       if (!inputRef.current) return
       inputRef.current.focus()
-    }
+    }, [])
 
     const isFocused = () => document.activeElement === itemRef.current
 
@@ -529,7 +528,7 @@ const TagsInputItemDelete = React.forwardRef<
       {...props}
     >
       <X aria-hidden />
-      <span className="sr-only">remove tag</span>
+      <span className="sr-only">{`remove tag ${keyIndex + 1}`}</span>
     </Button>
   )
 })
