@@ -584,11 +584,19 @@ const TagsInputInput = React.forwardRef<
         if (delimiterRegex.test(trimmedValue)) {
           const tags = trimmedValue
             .split(delimiterRegex)
-            .map((tag) => tag.trim())
+            .map((tag) => {
+              const trimmedTag = tag.trim()
+              return !isNaN(Number(trimmedTag))
+                ? Number(trimmedTag)
+                : trimmedTag
+            })
             .filter(Boolean)
           addTag(tags)
         } else {
-          addTag(trimmedValue)
+          const singleTag = !isNaN(Number(trimmedValue))
+            ? Number(trimmedValue)
+            : trimmedValue
+          addTag(singleTag)
         }
       },
       [delimiterRegex, addTag]
