@@ -273,6 +273,8 @@ const TagsInput = forwardRefWithGenerics(
 
     const removeTag = React.useCallback(
       (index: number) => {
+        if (isTagNonInteractive) return
+
         const updatedTags = tags.filter((_, i) => i !== index)
         setTags(updatedTags)
       },
@@ -510,10 +512,9 @@ const TagsInputItemDelete = React.forwardRef<
   const handleRemove = React.useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation()
-      if (isTagNonInteractive) return
       removeTag(keyIndex)
     },
-    [removeTag, keyIndex, isTagNonInteractive]
+    [removeTag, keyIndex]
   )
 
   return (
@@ -553,13 +554,14 @@ const TagsInputInput = React.forwardRef<
       addTag,
       inputRef: inputContextRef,
       keyboardCommands,
+      isTagNonInteractive,
     } = useTagsInput()
 
     const keyBindings = React.useMemo(() => {
       return { ...defaultKeyBindings, ...keyboardCommands }
     }, [defaultKeyBindings, keyboardCommands])
 
-    const isInputNonInteractive = disabled || readOnly
+    const isInputNonInteractive = disabled || readOnly || isTagNonInteractive
 
     const inputRef = React.useRef<HTMLInputElement>(null)
 
@@ -636,7 +638,7 @@ const TagsInputInput = React.forwardRef<
         readOnly={readOnly}
         onKeyDown={handleInputKeyDown}
         onPaste={handleInputPaste}
-        className={cn("flex-grow", className)}
+        className={cn("grow", className)}
         {...props}
       />
     )
