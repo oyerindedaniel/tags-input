@@ -18,7 +18,7 @@ type Wrapper<T extends Primitive> = {
 }
 
 type ExtendedObject<T extends Primitive> = Wrapper<T> & {
-  [key: string]: unknown
+  [key: Primitive]: unknown
 }
 
 type Tag<T extends Primitive> = T | Wrapper<T> | ExtendedObject<T>
@@ -39,7 +39,7 @@ interface TagsInputProps<T extends Tag<Primitive>>
     React.HTMLAttributes<HTMLDivElement>,
     "onChange" | "defaultValue"
   > {
-  value: T[]
+  value?: T[]
   onChange: (updatedTags: T[] | ((prevTags: T[]) => T[])) => void
   parseInput?: (input: Primitive) => ExtendedObject<Primitive> // Function to parse input (necessary if value is an object)
   orientation?: "row" | "column"
@@ -265,8 +265,7 @@ const TagsInput = forwardRefWithGenerics(
         minTags,
         allowDuplicates,
         isDuplicate,
-        disabled,
-        readOnly,
+        isTagNonInteractive,
         memoizedParseInput,
       ]
     )
@@ -298,7 +297,10 @@ const TagsInput = forwardRefWithGenerics(
         ref={ref}
         data-orientation={orientation}
         data-inline={inline}
-        className={cn("group flex flex-col space-y-2", className)}
+        className={cn(
+          "group flex flex-col space-y-2 data-[inline=true]:mx-auto data-[inline=true]:max-w-96 data-[inline=true]:rounded-md data-[inline=true]:border data-[inline=true]:border-secondary data-[inline=true]:px-3 data-[inline=true]:py-2.5",
+          className
+        )}
         {...props}
       >
         <TagsInputContext.Provider
@@ -359,7 +361,7 @@ const TagsInputGroup: React.FC<TagsInputGroupProps> = ({
 TagsInputGroup.displayName = "TagsInputGroup"
 
 const tagsInputItemVariants = cva(
-  "flex items-center justify-between rounded-md text-primary-foreground transition-colors focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 group-data-[orientation=row]:w-full [&_svg]:shrink-0 disabled:[&_svg]:pointer-events-none",
+  "flex shrink-0 items-center justify-between rounded-md text-primary-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 group-data-[orientation=row]:w-full [&_svg]:shrink-0 disabled:[&_svg]:pointer-events-none",
   {
     variants: {
       variant: {
@@ -375,7 +377,7 @@ const tagsInputItemVariants = cva(
       },
       size: {
         default: "h-8 px-2 text-sm",
-        sm: "h-7 px-2 text-xs",
+        sm: "h-7 px-2 text-sm",
         lg: "h-10 px-4 text-xl",
       },
     },
@@ -386,7 +388,7 @@ const tagsInputItemVariants = cva(
   }
 )
 
-const TagsInputItem = React.forwardRef<HTMLDivElement, TagsInputItemProps>(
+const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
   (
     {
       className,
@@ -543,6 +545,8 @@ const TagsInputInput = React.forwardRef<
   (
     {
       className,
+      onPaste,
+      onKeyDown,
       disabled = false,
       readOnly = false,
       delimiters = [Delimiters.Comma],
@@ -605,6 +609,14 @@ const TagsInputInput = React.forwardRef<
 
     const handleInputKeyDown = React.useCallback(
       (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (onKeyDown) {
+          onKeyDown(e)
+
+          if (e.defaultPrevented) {
+            return
+          }
+        }
+
         if (isInputNonInteractive || !inputRef.current) return
 
         const command = keyBindings[e.key]
@@ -619,6 +631,14 @@ const TagsInputInput = React.forwardRef<
 
     const handleInputPaste = React.useCallback(
       (e: React.ClipboardEvent<HTMLInputElement>) => {
+        if (onPaste) {
+          onPaste(e)
+
+          if (e.defaultPrevented) {
+            return
+          }
+        }
+
         if (isInputNonInteractive) return
 
         const pasteData = e.clipboardData.getData("text")
@@ -634,11 +654,15 @@ const TagsInputInput = React.forwardRef<
         ref={mergeRefs(forwardedRef, inputRef, inputContextRef)}
         autoComplete="off"
         autoCorrect="off"
-        disabled={disabled}
-        readOnly={readOnly}
+        autoCapitalize="off"
+        disabled={isInputNonInteractive}
+        readOnly={isInputNonInteractive}
         onKeyDown={handleInputKeyDown}
         onPaste={handleInputPaste}
-        className={cn("grow", className)}
+        className={cn(
+          "grow [[data-inline=true][data-orientation=column]_&]:basis-3/5",
+          className
+        )}
         {...props}
       />
     )

@@ -93,13 +93,13 @@ export default function Home() {
                     <TagsInput value={field.value} onChange={field.onChange}>
                       <TagsInputGroup>
                         {field.value.map((tag, idx) => (
-                          <TagsInputItem key={idx}>
+                          <TagsInputItem size="sm" key={idx}>
                             <TagsInputItemText>{tag}</TagsInputItemText>
                             <TagsInputItemDelete />
                           </TagsInputItem>
                         ))}
+                        <TagsInputInput placeholder="Enter tags" />
                       </TagsInputGroup>
-                      <TagsInputInput placeholder="Enter tags" />
                     </TagsInput>
                   </FormControl>
                   <FormDescription>These are your tags</FormDescription>
@@ -118,12 +118,10 @@ export default function Home() {
                   <TagsInput
                     value={field.value}
                     onChange={field.onChange}
-                    parseInput={(tag) => {
-                      return {
-                        value: tag,
-                        id: generateUniqueId(),
-                      }
-                    }}
+                    parseInput={(tag) => ({
+                      value: tag,
+                      id: generateUniqueId(),
+                    })}
                   >
                     <TagsInputGroup>
                       {field.value.map((tag, idx) => (
