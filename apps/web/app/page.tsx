@@ -7,13 +7,14 @@ import { z } from "zod"
 
 import {
   TagsInput,
+  TagsInputGroup,
   TagsInputInput,
   TagsInputItem,
   TagsInputItemDelete,
-  TagsInputItemGroup,
   TagsInputItemText,
 } from "@repo/tags/tags-input"
 import { Button } from "@repo/ui/button"
+import { Command } from "@repo/ui/command"
 import {
   Form,
   FormControl,
@@ -25,11 +26,28 @@ import {
 } from "@repo/ui/form"
 import { toast } from "@repo/ui/use-toast"
 
+function generateUniqueId(): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+  let uniqueId = ""
+  for (let i = 0; i < 6; i++) {
+    uniqueId += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return uniqueId
+}
+
 const FormSchema = z.object({
   tags: z.array(
     z
       .string()
       .min(1, { message: "Each tag value must have at least 1 character." })
+  ),
+  items: z.array(
+    z.object({
+      id: z.string(),
+      value: z
+        .string()
+        .min(1, { message: "Each value must have at least 1 character." }),
+    })
   ),
 })
 
@@ -37,13 +55,10 @@ export default function Home() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      tags: ["dani", "Ddd"],
+      tags: ["daniel", "davies", "charis", "mitchell"],
+      items: [],
     },
   })
-
-  console.log(form.formState.errors)
-
-  console.log(form.watch("tags"))
 
   function onSubmit(data: z.infer<typeof FormSchema>) {
     toast({
@@ -64,6 +79,9 @@ export default function Home() {
           onSubmit={form.handleSubmit(onSubmit)}
           className="w-2/3 space-y-6"
         >
+          <h1 className="mb-5 text-xl font-semibold text-primary underline">
+            Tags Input
+          </h1>
           <FormField
             control={form.control}
             name="tags"
@@ -73,14 +91,14 @@ export default function Home() {
                   <FormLabel>Tags</FormLabel>
                   <FormControl>
                     <TagsInput value={field.value} onChange={field.onChange}>
-                      <TagsInputItemGroup>
+                      <TagsInputGroup>
                         {field.value.map((tag, idx) => (
-                          <TagsInputItem key={idx} keyIndex={idx}>
+                          <TagsInputItem key={idx}>
                             <TagsInputItemText>{tag}</TagsInputItemText>
                             <TagsInputItemDelete />
                           </TagsInputItem>
                         ))}
-                      </TagsInputItemGroup>
+                      </TagsInputGroup>
                       <TagsInputInput placeholder="Enter tags" />
                     </TagsInput>
                   </FormControl>
@@ -89,6 +107,50 @@ export default function Home() {
                 </FormItem>
               )
             }}
+          />
+          <FormField
+            control={form.control}
+            name="items"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Items</FormLabel>
+                <FormControl>
+                  <TagsInput
+                    value={field.value}
+                    onChange={field.onChange}
+                    parseInput={(tag) => {
+                      return {
+                        value: tag,
+                        id: generateUniqueId(),
+                      }
+                    }}
+                  >
+                    <TagsInputGroup>
+                      {field.value.map((tag, idx) => (
+                        <TagsInputItem key={idx}>
+                          <TagsInputItemText>{tag.value}</TagsInputItemText>
+                          <TagsInputItemDelete />
+                        </TagsInputItem>
+                      ))}
+                    </TagsInputGroup>
+                    <TagsInputInput placeholder="Enter tags" />
+                    <Button
+                      type="button"
+                      onClick={() =>
+                        field.onChange([
+                          ...field.value,
+                          { id: generateUniqueId(), value: "new tag" },
+                        ])
+                      }
+                    >
+                      Add random tag
+                    </Button>
+                  </TagsInput>
+                </FormControl>
+                <FormDescription>These are your tags</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
           />
           <Button className="w-full" type="submit">
             Submit
