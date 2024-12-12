@@ -29,7 +29,7 @@ interface TagsInputContextType<T extends Tag<Primitive>> {
   addTag: (tag: T | T[]) => void
   removeTag: (index: number) => void
   inputRef: React.RefObject<HTMLInputElement>
-  keyboardCommands: Record<React.KeyboardEvent["key"], TagsInputKeyActions>
+  keyBindings: Record<React.KeyboardEvent["key"], TagsInputKeyActions>
   isTagNonInteractive: boolean
 }
 
@@ -115,7 +115,7 @@ const useTagsInput = <T extends Tag<Primitive>>(): TagsInputContextType<T> => {
   return context as TagsInputContextType<T>
 }
 
-const forwardRefWithGenerics = <
+function forwardRefWithGenerics<
   T extends Tag<Primitive>,
   P extends TagsInputProps<T>,
   R extends HTMLDivElement,
@@ -123,7 +123,7 @@ const forwardRefWithGenerics = <
   render: React.ForwardRefRenderFunction<R, React.PropsWithoutRef<P>>
 ): React.ForwardRefExoticComponent<
   React.PropsWithoutRef<P> & React.RefAttributes<R>
-> => {
+> {
   return React.forwardRef<R, P>(render)
 }
 
@@ -169,7 +169,7 @@ const TagsInput = forwardRefWithGenerics(
       readOnly = false,
       keyboardCommands = defaultKeyBindings,
       parseInput,
-      ...props
+      ...rest
     }: TagsInputProps<T>,
     ref: React.Ref<HTMLDivElement>
   ) => {
@@ -183,6 +183,10 @@ const TagsInput = forwardRefWithGenerics(
     const isTagNonInteractive = disabled || readOnly
 
     const tags = _tags ?? []
+
+    const keyBindings = React.useMemo(() => {
+      return { ...defaultKeyBindings, ...keyboardCommands }
+    }, [defaultKeyBindings, keyboardCommands])
 
     const setTags = React.useCallback(
       (updatedTags: T[] | ((prevTags: T[]) => T[])) => {
@@ -286,7 +290,7 @@ const TagsInput = forwardRefWithGenerics(
         addTag,
         removeTag,
         inputRef,
-        keyboardCommands,
+        keyBindings,
         isTagNonInteractive,
       }),
       [tags, addTag, removeTag]
@@ -301,7 +305,7 @@ const TagsInput = forwardRefWithGenerics(
           "group flex flex-col space-y-2 data-[inline=true]:mx-auto data-[inline=true]:max-w-96 data-[inline=true]:rounded-md data-[inline=true]:border data-[inline=true]:border-secondary data-[inline=true]:px-3 data-[inline=true]:py-2.5",
           className
         )}
-        {...props}
+        {...rest}
       >
         <TagsInputContext.Provider
           value={
@@ -319,6 +323,7 @@ TagsInput.displayName = "TagsInput"
 
 const TagsInputGroupContext = React.createContext<{
   keyIndex: number
+  textIdPrefix: string
 } | null>(null)
 
 const useTagsInputGroup = () => {
@@ -334,20 +339,26 @@ const useTagsInputGroup = () => {
 const TagsInputGroup: React.FC<TagsInputGroupProps> = ({
   className,
   children,
-  ...props
+  ...rest
 }) => {
+  const textId = React.useId()
   return (
     <div
       className={cn(
         "flex flex-wrap items-center gap-x-2 gap-y-1 group-data-[orientation=column]:flex-row group-data-[orientation=row]:flex-col",
         className
       )}
-      {...props}
+      {...rest}
     >
       {React.Children.map(children, (child, index) => {
         if (React.isValidElement(child)) {
           return (
-            <TagsInputGroupContext.Provider value={{ keyIndex: index }}>
+            <TagsInputGroupContext.Provider
+              value={{
+                keyIndex: index,
+                textIdPrefix: `${textId}-tag-${index}`,
+              }}
+            >
               {child}
             </TagsInputGroupContext.Provider>
           )
@@ -390,29 +401,17 @@ const tagsInputItemVariants = cva(
 
 const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
   (
-    {
-      className,
-      children,
-      asChild = false,
-      variant,
-      size,
-      onKeyDown,
-      ...props
-    },
+    { className, children, asChild = false, variant, size, onKeyDown, ...rest },
     forwardedRef
   ) => {
-    const { removeTag, inputRef, isTagNonInteractive, keyboardCommands } =
+    const { removeTag, inputRef, isTagNonInteractive, keyBindings } =
       useTagsInput()
 
-    const { keyIndex } = useTagsInputGroup()
+    const { keyIndex, textIdPrefix } = useTagsInputGroup()
 
-    const Comp = asChild ? Slot : "span"
+    const Comp = asChild ? Slot : "div"
 
     const itemRef = React.useRef<HTMLElement | null>(null)
-
-    const keyBindings = React.useMemo(() => {
-      return { ...defaultKeyBindings, ...keyboardCommands }
-    }, [defaultKeyBindings, keyboardCommands])
 
     const focusInput = React.useCallback(() => {
       if (!inputRef.current) return
@@ -431,9 +430,7 @@ const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
           }
         }
 
-        if (isTagNonInteractive) {
-          return
-        }
+        if (isTagNonInteractive) return
 
         const action = keyBindings[e.key]
         if (!action) return
@@ -477,11 +474,17 @@ const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
       <Comp
         ref={mergeRefs(forwardedRef, itemRef)}
         data-id={keyIndex}
-        tabIndex={0}
-        aria-label={`Tag ${keyIndex + 1}`}
+        tabIndex={isTagNonInteractive ? -1 : 0}
+        aria-labelledby={textIdPrefix}
+        aria-disabled={isTagNonInteractive}
         onKeyDown={handleTagKeyDown}
-        className={cn(tagsInputItemVariants({ variant, size }), className)}
-        {...props}
+        className={cn(
+          tagsInputItemVariants({ variant, size }),
+          isTagNonInteractive &&
+            "pointer-events-none cursor-not-allowed opacity-50",
+          className
+        )}
+        {...rest}
       >
         {children}
       </Comp>
@@ -494,9 +497,10 @@ TagsInputItem.displayName = "TagsInputItem"
 const TagsInputItemText = React.forwardRef<
   HTMLDivElement,
   TagsInputItemTextProps
->(({ className, children, ...props }, ref) => {
+>(({ className, children, ...rest }, ref) => {
+  const { textIdPrefix } = useTagsInputGroup()
   return (
-    <span className={cn("", className)} ref={ref} {...props}>
+    <span id={textIdPrefix} className={cn("", className)} ref={ref} {...rest}>
       {children}
     </span>
   )
@@ -507,7 +511,7 @@ TagsInputItemText.displayName = "TagsInputItemText"
 const TagsInputItemDelete = React.forwardRef<
   React.ElementRef<typeof Button>,
   React.ComponentProps<typeof Button>
->(({ className, ...props }, ref) => {
+>(({ className, ...rest }, ref) => {
   const { removeTag, isTagNonInteractive } = useTagsInput()
   const { keyIndex } = useTagsInputGroup()
 
@@ -524,14 +528,15 @@ const TagsInputItemDelete = React.forwardRef<
       ref={ref}
       type="button"
       variant="ghost"
+      aria-label="delete tag"
+      aria-disabled={isTagNonInteractive}
       size="icon"
       className={cn("ml-2 h-5 w-5", className)}
       onClick={handleRemove}
       disabled={isTagNonInteractive}
-      {...props}
+      {...rest}
     >
       <X aria-hidden />
-      <span className="sr-only">{`remove tag ${keyIndex + 1}`}</span>
     </Button>
   )
 })
@@ -550,20 +555,16 @@ const TagsInputInput = React.forwardRef<
       disabled = false,
       readOnly = false,
       delimiters = [Delimiters.Comma],
-      ...props
+      ...rest
     },
     forwardedRef
   ) => {
     const {
       addTag,
       inputRef: inputContextRef,
-      keyboardCommands,
+      keyBindings,
       isTagNonInteractive,
     } = useTagsInput()
-
-    const keyBindings = React.useMemo(() => {
-      return { ...defaultKeyBindings, ...keyboardCommands }
-    }, [defaultKeyBindings, keyboardCommands])
 
     const isInputNonInteractive = disabled || readOnly || isTagNonInteractive
 
@@ -655,15 +656,15 @@ const TagsInputInput = React.forwardRef<
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="off"
+        aria-disabled={isInputNonInteractive}
         disabled={isInputNonInteractive}
-        readOnly={isInputNonInteractive}
         onKeyDown={handleInputKeyDown}
         onPaste={handleInputPaste}
         className={cn(
           "grow [[data-inline=true][data-orientation=column]_&]:basis-3/5",
           className
         )}
-        {...props}
+        {...rest}
       />
     )
   }

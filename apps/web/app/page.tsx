@@ -74,27 +74,57 @@ export default function Home() {
 
   return (
     <div className="flex h-full items-center justify-center">
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="w-2/3 space-y-6"
-        >
-          <h1 className="mb-5 text-xl font-semibold text-primary underline">
-            Tags Input
-          </h1>
-          <FormField
-            control={form.control}
-            name="tags"
-            render={({ field }) => {
-              return (
+      <div className="w-2/3">
+        <h1 className="mb-5 text-xl font-semibold text-primary underline">
+          Tags Input
+        </h1>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="tags"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Tags</FormLabel>
+                    <FormControl>
+                      <TagsInput value={field.value} onChange={field.onChange}>
+                        <TagsInputGroup>
+                          {field.value.map((tag, idx) => (
+                            <TagsInputItem size="sm" key={idx}>
+                              <TagsInputItemText>{tag}</TagsInputItemText>
+                              <TagsInputItemDelete />
+                            </TagsInputItem>
+                          ))}
+                          <TagsInputInput placeholder="Enter tags" />
+                        </TagsInputGroup>
+                      </TagsInput>
+                    </FormControl>
+                    <FormDescription>These are your tags</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+            <FormField
+              control={form.control}
+              name="items"
+              render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tags</FormLabel>
+                  <FormLabel>Items</FormLabel>
                   <FormControl>
-                    <TagsInput value={field.value} onChange={field.onChange}>
+                    <TagsInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      parseInput={(tag) => ({
+                        value: tag,
+                        id: generateUniqueId(),
+                      })}
+                    >
                       <TagsInputGroup>
                         {field.value.map((tag, idx) => (
-                          <TagsInputItem size="sm" key={idx}>
-                            <TagsInputItemText>{tag}</TagsInputItemText>
+                          <TagsInputItem key={idx}>
+                            <TagsInputItemText>{tag.value}</TagsInputItemText>
                             <TagsInputItemDelete />
                           </TagsInputItem>
                         ))}
@@ -104,57 +134,26 @@ export default function Home() {
                   </FormControl>
                   <FormDescription>These are your tags</FormDescription>
                   <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
-          <FormField
-            control={form.control}
-            name="items"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Items</FormLabel>
-                <FormControl>
-                  <TagsInput
-                    value={field.value}
-                    onChange={field.onChange}
-                    parseInput={(tag) => ({
-                      value: tag,
-                      id: generateUniqueId(),
-                    })}
+                  <Button
+                    type="button"
+                    onClick={() =>
+                      field.onChange([
+                        ...field.value,
+                        { id: generateUniqueId(), value: "new tag" },
+                      ])
+                    }
                   >
-                    <TagsInputGroup>
-                      {field.value.map((tag, idx) => (
-                        <TagsInputItem key={idx}>
-                          <TagsInputItemText>{tag.value}</TagsInputItemText>
-                          <TagsInputItemDelete />
-                        </TagsInputItem>
-                      ))}
-                    </TagsInputGroup>
-                    <TagsInputInput placeholder="Enter tags" />
-                    <Button
-                      type="button"
-                      onClick={() =>
-                        field.onChange([
-                          ...field.value,
-                          { id: generateUniqueId(), value: "new tag" },
-                        ])
-                      }
-                    >
-                      Add random tag
-                    </Button>
-                  </TagsInput>
-                </FormControl>
-                <FormDescription>These are your tags</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button className="w-full" type="submit">
-            Submit
-          </Button>
-        </form>
-      </Form>
+                    Add random tag
+                  </Button>
+                </FormItem>
+              )}
+            />
+            <Button className="w-full" type="submit">
+              Submit
+            </Button>
+          </form>
+        </Form>
+      </div>
     </div>
   )
 }
