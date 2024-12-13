@@ -26,7 +26,7 @@ type Tag<T extends Primitive> = T | Wrapper<T> | ExtendedObject<T>
 // Context Type
 interface TagsInputContextType<T extends Tag<Primitive>> {
   tags: T[]
-  addTag: (tag: T | T[]) => void
+  addTag: (tag: Primitive | Primitive[]) => void
   removeTag: (index: number) => void
   inputRef: React.RefObject<HTMLInputElement>
   keyBindings: Record<React.KeyboardEvent["key"], TagsInputKeyActions>
@@ -219,8 +219,8 @@ const TagsInput = forwardRefWithGenerics(
     const isDuplicate = React.useCallback(
       (tag: T | T[]): boolean => {
         const tagsToCheck = Array.isArray(tag) ? tag : [tag]
-        const normalizedTags = tags.map((t) =>
-          normalizeTag(t, caseSensitiveDuplicates)
+        const normalizedTags = tags.map((tag) =>
+          normalizeTag(tag, caseSensitiveDuplicates)
         )
 
         return tagsToCheck.some((singleTag) => {
@@ -234,7 +234,7 @@ const TagsInput = forwardRefWithGenerics(
     const memoizedParseInput = React.useMemo(() => parseInput, [])
 
     const addTag = React.useCallback(
-      (tag: T | T[]) => {
+      (tag: Primitive | Primitive[]) => {
         if (
           isTagNonInteractive ||
           tag == null ||
@@ -246,21 +246,36 @@ const TagsInput = forwardRefWithGenerics(
 
         const tagsToAdd = Array.isArray(tag) ? tag : [tag]
 
-        const newTags = tagsToAdd
-          .map((singleTag) => {
-            const parsedTag = memoizedParseInput
-              ? memoizedParseInput(singleTag as Primitive)
-              : singleTag
+        // Normalizes the incoming tags for deduplication within the batch
+        const normalizedExistingTags = new Set(
+          tags.map((tag) => normalizeTag(tag, caseSensitiveDuplicates))
+        )
 
-            return parsedTag as T
-          })
-          .filter(
-            (singleTag) =>
-              singleTag != null && (allowDuplicates || !isDuplicate(singleTag))
+        const uniqueNormalizedTags = new Set<Primitive>()
+        const uniqueTagsToAdd: T[] = []
+
+        for (const singleTag of tagsToAdd) {
+          // Preprocesses the tag if parse input function is passed
+          const parsedTag = memoizedParseInput
+            ? memoizedParseInput(singleTag)
+            : singleTag
+
+          const normalizedTag = normalizeTag(
+            parsedTag as T,
+            caseSensitiveDuplicates
           )
 
-        if (newTags.length > 0) {
-          setTags((prevTags) => [...prevTags, ...newTags])
+          if (
+            !uniqueNormalizedTags.has(normalizedTag) && // Not a duplicate within the batch
+            (allowDuplicates || !normalizedExistingTags.has(normalizedTag)) // Not a duplicate in existing tags
+          ) {
+            uniqueNormalizedTags.add(normalizedTag)
+            uniqueTagsToAdd.push(parsedTag as T)
+          }
+        }
+
+        if (uniqueTagsToAdd.length > 0) {
+          setTags((prevTags) => [...prevTags, ...uniqueTagsToAdd])
         }
       },
       [
@@ -500,7 +515,13 @@ const TagsInputItemText = React.forwardRef<
 >(({ className, children, ...rest }, ref) => {
   const { textIdPrefix } = useTagsInputGroup()
   return (
-    <span id={textIdPrefix} className={cn("", className)} ref={ref} {...rest}>
+    <span
+      id={textIdPrefix}
+      aria-hidden
+      className={cn("", className)}
+      ref={ref}
+      {...rest}
+    >
       {children}
     </span>
   )

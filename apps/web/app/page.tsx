@@ -45,8 +45,8 @@ const FormSchema = z.object({
     z.object({
       id: z.string(),
       value: z
-        .string()
-        .min(1, { message: "Each value must have at least 1 character." }),
+        .number()
+        .min(0, { message: "Each value must have at least 1 character." }),
     })
   ),
 })
@@ -88,7 +88,11 @@ export default function Home() {
                   <FormItem>
                     <FormLabel>Tags</FormLabel>
                     <FormControl>
-                      <TagsInput value={field.value} onChange={field.onChange}>
+                      <TagsInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        caseSensitiveDuplicates
+                      >
                         <TagsInputGroup>
                           {field.value.map((tag, idx) => (
                             <TagsInputItem size="sm" key={idx}>
@@ -116,6 +120,7 @@ export default function Home() {
                     <TagsInput
                       value={field.value}
                       onChange={field.onChange}
+                      caseSensitiveDuplicates
                       parseInput={(tag) => ({
                         value: tag,
                         id: generateUniqueId(),
