@@ -36,19 +36,24 @@ function generateUniqueId(): string {
 }
 
 const FormSchema = z.object({
-  tags: z.array(
-    z
-      .string()
-      .min(1, { message: "Each tag value must have at least 1 character." })
-  ),
-  items: z.array(
-    z.object({
-      id: z.string(),
-      value: z
-        .number()
-        .min(0, { message: "Each value must have at least 1 character." }),
-    })
-  ),
+  tags: z
+    .array(
+      z.string({
+        message: "Tags must be strings.",
+      })
+    )
+    .min(1, { message: "You must enter at least one tag." })
+    .refine((tags) => tags.every((tag) => isNaN(Number(tag))), {
+      message: "Tags must be strings, not numbers.",
+    }),
+  items: z
+    .array(
+      z.object({
+        id: z.string({ required_error: "Tag must be a string." }),
+        value: z.string(),
+      })
+    )
+    .min(1, { message: "You must enter at least one item." }),
 })
 
 export default function Home() {
@@ -100,7 +105,10 @@ export default function Home() {
                               <TagsInputItemDelete />
                             </TagsInputItem>
                           ))}
-                          <TagsInputInput placeholder="Enter tags" />
+                          <TagsInputInput
+                            placeholder="Enter tags"
+                            ref={field.ref}
+                          />
                         </TagsInputGroup>
                       </TagsInput>
                     </FormControl>
@@ -133,7 +141,10 @@ export default function Home() {
                             <TagsInputItemDelete />
                           </TagsInputItem>
                         ))}
-                        <TagsInputInput placeholder="Enter tags" />
+                        <TagsInputInput
+                          placeholder="Enter tags"
+                          ref={field.ref}
+                        />
                       </TagsInputGroup>
                     </TagsInput>
                   </FormControl>

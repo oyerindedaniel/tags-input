@@ -265,12 +265,16 @@ const TagsInput = forwardRefWithGenerics(
             caseSensitiveDuplicates
           )
 
-          if (
-            !uniqueNormalizedTags.has(normalizedTag) && // Not a duplicate within the batch
-            (allowDuplicates || !normalizedExistingTags.has(normalizedTag)) // Not a duplicate in existing tags
-          ) {
-            uniqueNormalizedTags.add(normalizedTag)
+          if (allowDuplicates) {
             uniqueTagsToAdd.push(parsedTag as T)
+          } else {
+            if (
+              !uniqueNormalizedTags.has(normalizedTag) &&
+              !normalizedExistingTags.has(normalizedTag)
+            ) {
+              uniqueNormalizedTags.add(normalizedTag)
+              uniqueTagsToAdd.push(parsedTag as T)
+            }
           }
         }
 
