@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 
 import { useDisclosure } from "@repo/hooks/use-disclosure"
+import { useIsMounted } from "@repo/hooks/use-is-mounted"
 import {
   TagsInput,
   TagsInputGroup,
@@ -95,6 +96,7 @@ const randomTags = [
 
 export default function Home() {
   const { isOpen, onOpen, onClose, toggle } = useDisclosure()
+  const isMounted = useIsMounted()
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -114,8 +116,10 @@ export default function Home() {
         </pre>
       ),
     })
-    // form.reset()
+    form.reset()
   }
+
+  if (!isMounted) return
 
   return (
     <div className="flex h-full items-center justify-center">

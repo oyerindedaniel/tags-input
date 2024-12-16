@@ -11,7 +11,8 @@
     "./use-combined-ref": "./src/use-combined-ref.ts",
     "./use-controllable-state": "./src/use-controllable-state.ts",
     "./use-callback-ref": "./src/use-callback-ref.ts",
-    "./use-disclosure": "./src/use-disclosure.ts"
+    "./use-disclosure": "./src/use-disclosure.ts",
+    "./use-is-mounted": "./src/use-is-mounted.ts"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
