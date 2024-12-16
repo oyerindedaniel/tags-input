@@ -33,25 +33,150 @@ interface TagsInputContextType<T extends Tag<Primitive>> {
   isTagNonInteractive: boolean
 }
 
-// Component Props
+/**
+ * Props for the TagsInput component.
+ *
+ * @template T - A generic type extending `Tag<Primitive>`, where `Primitive` is `string` or `number`.
+ * @extends {Omit<React.HTMLAttributes<HTMLDivElement>, "onChange" | "defaultValue">}
+ */
 interface TagsInputProps<T extends Tag<Primitive>>
   extends Omit<
     React.HTMLAttributes<HTMLDivElement>,
     "onChange" | "defaultValue"
   > {
+  /**
+   * Array of tags representing the current value.
+   * Each tag can be one of the following:
+   * - A primitive (`string` or `number`).
+   * - A wrapper object: `{ value: Primitive }`.
+   * - An extended object: `{ value: Primitive, [key: Primitive]: unknown }`.
+   *
+   * @example
+   * // Example with primitive tags:
+   * value={["tag1", "tag2"]}
+   *
+   * @example
+   * // Example with wrapper objects:
+   * value={[{ value: "tag1" }, { value: "tag2" }]}
+   *
+   * @example
+   * // Example with extended objects:
+   * value={[
+   *   { value: "tag1", label: "Tag 1", color: "red" },
+   *   { value: "tag2", description: "Second tag" }
+   * ]}
+   */
   value?: T[]
-  onChange: (updatedTags: T[] | ((prevTags: T[]) => T[])) => void
-  parseInput?: (input: Primitive) => ExtendedObject<Primitive> // Function to parse input (necessary if value is an object)
+
+  /**
+   * Callback invoked when the tags array is updated.
+   * Can either accept a new array of tags or a function that receives
+   * the previous tags and returns the updated array.
+   *
+   * @param updatedTags - The updated tags or a function to produce them.
+   * @example
+   * // Example with direct update:
+   * onChange={(updatedTags) => console.log(updatedTags)}
+   *
+   * @example
+   * // Example with functional update:
+   * onChange={(prevTags) => [...prevTags, { value: "newTag" }]}
+   */
+  onChange?: (updatedTags: T[] | ((prevTags: T[]) => T[])) => void
+
+  /**
+   * Function to parse input into a tag object.
+   * Required if the `value` consists of objects rather than primitives.
+   *
+   * @param input - The input value to be parsed (either `string` or `number`).
+   * @returns {ExtendedObject<Primitive>} A parsed tag object.
+   * @example
+   * parseInput={(input) => ({ value: input, label: `Tag: ${input}` })}
+   */
+  parseInput?: (input: Primitive) => ExtendedObject<Primitive>
+
+  /**
+   * Layout direction for displaying tags.
+   * Can be "row" for horizontal or "column" for vertical layout.
+   *
+   * @default "column"
+   */
   orientation?: "row" | "column"
+
+  /**
+   * Whether the tags are displayed inline or not.
+   *
+   * @default false
+   */
   inline?: boolean
-  maxTags?: number // Maximum number of tags
-  minTags?: number // Minimum number of tags
-  allowDuplicates?: boolean // Whether duplicates are allowed
-  caseSensitiveDuplicates?: boolean // Case-sensitive duplicate checks true -> "allowed" | false -> "not-allowed"
-  disabled?: boolean // Disable the entire component
-  readOnly?: boolean // Prevent adding/removing tags
+
+  /**
+   * Maximum number of tags allowed.
+   * Prevents adding more tags if this limit is reached.
+   *
+   * @example
+   * maxTags={10}
+   */
+  maxTags?: number
+
+  /**
+   * Minimum number of tags required.
+   * Ensures at least this many tags are present.
+   *
+   * @example
+   * minTags={1}
+   */
+  minTags?: number
+
+  /**
+   * Whether duplicate tags are allowed.
+   * Duplicates are determined based on the tag's value.
+   *
+   * @default false
+   * @example
+   * allowDuplicates={true}
+   */
+  allowDuplicates?: boolean
+
+  /**
+   * Whether duplicate checks are case-sensitive.
+   *
+   * - `true` -> Case-sensitive duplicate checks (e.g., "Tag" and "tag" are different).
+   * - `false` -> Case-insensitive duplicate checks (e.g., "Tag" and "tag" are the same).
+   *
+   * @default false
+   */
+  caseSensitiveDuplicates?: boolean
+
+  /**
+   * Disable the entire component.
+   * Prevents interaction with the tags.
+   *
+   * @default false
+   */
+  disabled?: boolean
+
+  /**
+   * Prevents adding or removing tags, making the component read-only.
+   *
+   * @default false
+   */
+  readOnly?: boolean
+
+  /**
+   * Mapping of keyboard commands to tag actions.
+   * Allows customization of the key bindings for actions like adding or removing tags.
+   *
+   * @default defaultKeyBindings
+   * @example
+   * keyboardCommands={{
+   *   Enter: "add",
+   *   Backspace: "remove",
+   *   ArrowLeft: "navigateLeft",
+   *   ArrowRight: "navigateRight"
+   * }}
+   */
   keyboardCommands?: Record<React.KeyboardEvent["key"], TagsInputKeyActions>
-  // Keyboard commands mapping
 }
 
 interface TagsInputItemProps
@@ -141,13 +266,14 @@ function mergeRefs<T>(
   }
 }
 
-function isPlainObject<T extends Primitive>(
+function isObject<T extends Primitive>(
   value: unknown
 ): value is ExtendedObject<T> {
   return (
     typeof value === "object" &&
     value !== null &&
     !Array.isArray(value) &&
+    "value" in value &&
     Object.prototype.toString.call(value) === "[object Object]"
   )
 }
@@ -207,7 +333,7 @@ const TagsInput = forwardRefWithGenerics(
 
     // Helper function to normalize tag values for comparison
     const normalizeTag = (tag: T, caseSensitive: boolean): string => {
-      if (isPlainObject(tag)) {
+      if (isObject(tag)) {
         return caseSensitive
           ? String(tag.value)
           : String(tag.value).toLowerCase()
@@ -420,7 +546,7 @@ const tagsInputItemVariants = cva(
 
 const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
   (
-    { className, children, asChild = false, variant, size, onKeyDown, ...rest },
+    { className, asChild = false, variant, size, onKeyDown, ...rest },
     forwardedRef
   ) => {
     const { removeTag, inputRef, isTagNonInteractive, keyBindings } =
@@ -504,9 +630,7 @@ const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
           className
         )}
         {...rest}
-      >
-        {children}
-      </Comp>
+      />
     )
   }
 )
@@ -516,7 +640,7 @@ TagsInputItem.displayName = "TagsInputItem"
 const TagsInputItemText = React.forwardRef<
   HTMLDivElement,
   TagsInputItemTextProps
->(({ className, children, ...rest }, ref) => {
+>(({ className, ...rest }, ref) => {
   const { textIdPrefix } = useTagsInputGroup()
   return (
     <span
@@ -525,9 +649,7 @@ const TagsInputItemText = React.forwardRef<
       className={cn("", className)}
       ref={ref}
       {...rest}
-    >
-      {children}
-    </span>
+    />
   )
 })
 
@@ -536,8 +658,11 @@ TagsInputItemText.displayName = "TagsInputItemText"
 const TagsInputItemDelete = React.forwardRef<
   React.ElementRef<typeof Button>,
   React.ComponentProps<typeof Button>
->(({ className, ...rest }, ref) => {
+>(({ className, disabled, ...rest }, ref) => {
   const { removeTag, isTagNonInteractive } = useTagsInput()
+
+  const isButtonNonInteractive = disabled || isTagNonInteractive
+
   const { keyIndex } = useTagsInputGroup()
 
   const handleRemove = React.useCallback(
@@ -554,11 +679,11 @@ const TagsInputItemDelete = React.forwardRef<
       type="button"
       variant="ghost"
       aria-label="delete tag"
-      aria-disabled={isTagNonInteractive}
+      aria-disabled={isButtonNonInteractive}
       size="icon"
       className={cn("ml-2 h-5 w-5", className)}
       onClick={handleRemove}
-      disabled={isTagNonInteractive}
+      disabled={isButtonNonInteractive}
       {...rest}
     >
       <X aria-hidden />

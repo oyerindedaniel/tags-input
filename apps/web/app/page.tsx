@@ -220,7 +220,7 @@ export default function Home() {
                       (command example)
                     </span>
                   </FormLabel>
-                  <TagsInput value={field.value} onChange={field.onChange}>
+                  <TagsInput>
                     <TagsInputGroup>
                       {field.value.map((tag, idx) => (
                         <TagsInputItem key={idx}>
@@ -242,7 +242,8 @@ export default function Home() {
                                 e.preventDefault()
                               }
                             }}
-                            onPaste={(e) => e.preventDefault()}
+                            delimiters={[]}
+                            // onPaste={(e) => e.preventDefault()}
                             placeholder="Enter tags"
                             ref={field.ref}
                           />
@@ -251,7 +252,7 @@ export default function Home() {
 
                       {/* <CommandDialog open={isOpen} onOpenChange={onClose}> */}
                       <CommandList className="border border-secondary">
-                        <CommandEmpty>No framework found.</CommandEmpty>
+                        <CommandEmpty>No tag found.</CommandEmpty>
                         <CommandGroup>
                           {randomTags
                             .filter((tag) => !field.value.includes(tag.value))
