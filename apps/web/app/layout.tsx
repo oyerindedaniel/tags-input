@@ -28,7 +28,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={cn("h-dvh", geistSans.variable, geistMono.variable)}>
+      <body
+        className={cn(
+          "min-h-dvh py-12",
+          geistSans.variable,
+          geistMono.variable
+        )}
+      >
         {children}
         <Toaster />
       </body>
