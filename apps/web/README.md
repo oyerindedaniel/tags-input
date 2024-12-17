@@ -1,36 +1,210 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/create-next-app).
+# TagsInput Component
 
-## Getting Started
+The `TagsInput` component is a flexible and customizable React component for inputting, managing, and displaying tags. It supports advanced features like object parsing, duplicate handling, keyboard commands, and customizable delimiters.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Table of Contents
+
+1. [Usage](#usage)
+2. [Props](#props)
+   - [TagsInput Props](#tagsinput-props)
+   - [Input Delimiters](#input-delimiters)
+   - [Keyboard Commands](#keyboard-commands)
+3. [Examples](#examples)
+4. [License](#license)
+
+---
+
+## Usage
+
+```tsx
+import React from "react"
+
+import {
+  TagsInput,
+  TagsInputGroup,
+  TagsInputInput,
+  TagsInputItem,
+  TagsInputItemDelete,
+  TagsInputItemText,
+} from "@repo/tags-input"
+
+export default function App() {
+  const [tags, setTags] = React.useState<string[]>(["tag1", "tag2"])
+
+  return (
+    <TagsInput value={tags} onChange={setTags} maxTags={5}>
+      <TagsInputGroup>
+        {tags.map((tag, idx) => (
+          <TagsInputItem key={idx}>
+            <TagsInputItemText>{tag}</TagsInputItemText>
+            <TagsInputItemDelete />
+          </TagsInputItem>
+        ))}
+        <TagsInputInput placeholder="Add tags..." />
+      </TagsInputGroup>
+    </TagsInput>
+  )
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Props
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load Inter, a custom Google Font.
+### TagsInput Props
 
-## Learn More
+| Prop                      | Type                                                      | Description                                                       | Default              |
+| ------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------- | -------------------- |
+| `value`                   | `T[]`                                                     | The array of tags or objects.                                     | `[]`                 |
+| `onChange`                | `(updatedTags: T[]) => void`                              | Callback fired when the tags change.                              | `undefined`          |
+| `parseInput`              | `(input: Primitive) => ExtendedObject<Primitive>`         | Function to parse input into an object (useful for complex tags). | `undefined`          |
+| `orientation`             | `"row" \| "column"`                                       | Layout orientation of the tags.                                   | `column`             |
+| `inline`                  | `boolean`                                                 | Render the tags inline.                                           | `false`              |
+| `maxTags`                 | `number`                                                  | Maximum number of tags allowed.                                   | `undefined`          |
+| `minTags`                 | `number`                                                  | Minimum number of tags required.                                  | `undefined`          |
+| `allowDuplicates`         | `boolean`                                                 | Allow duplicate tags.                                             | `false`              |
+| `caseSensitiveDuplicates` | `boolean`                                                 | Enable case-sensitive duplicate checks.                           | `false`              |
+| `disabled`                | `boolean`                                                 | Disable the entire tags input component.                          | `false`              |
+| `readOnly`                | `boolean`                                                 | Prevent adding/removing tags.                                     | `false`              |
+| `keyboardCommands`        | `Record<React.KeyboardEvent["key"], TagsInputKeyActions>` | Mapping of keyboard actions for managing tags.                    | Default key bindings |
 
-To learn more about Next.js, take a look at the following resources:
+### Input Delimiters
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The `TagsInputInput` component supports delimiters for splitting input into multiple tags. The supported delimiters are defined as:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Delimiter              | Example |
+| ---------------------- | ------- |
+| `Delimiters.Comma`     | `","`   |
+| `Delimiters.Semicolon` | `";"`   |
+| `Delimiters.Space`     | `" "`   |
 
-## Deploy on Vercel
+### Example Usage with Delimiters
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```tsx
+import React from "react"
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+import {
+  Delimiters,
+  TagsInput,
+  TagsInputGroup,
+  TagsInputInput,
+  TagsInputItem,
+} from "@repo/tags-input"
+
+function App() {
+  return (
+    <TagsInput>
+      <TagsInputGroup>
+        <TagsInputInput
+          delimiters={[Delimiters.Comma, Delimiters.Space]}
+          placeholder="Enter tags separated by commas or spaces"
+        />
+      </TagsInputGroup>
+    </TagsInput>
+  )
+}
+```
+
+### Keyboard Commands
+
+The `keyboardCommands` prop allows customization of keyboard shortcuts for tag management.
+
+| Key          | Action                  |
+| ------------ | ----------------------- |
+| `Enter`      | Add a new tag.          |
+| `Backspace`  | Remove the last tag.    |
+| `Delete`     | Remove the focused tag. |
+| `ArrowLeft`  | Navigate left.          |
+| `ArrowRight` | Navigate right.         |
+
+### Example Usage with Commands
+
+```tsx
+import React from "react"
+
+import { TagsInput, TagsInputKeyActions } from "@repo/tags-input"
+
+const customKeyboardCommands = {
+  Escape: TagsInputKeyActions.Remove,
+}
+
+function App() {
+  return <TagsInput keyboardCommands={customKeyboardCommands} />
+}
+```
+
+---
+
+## Examples
+
+### Tags with Custom Object Parsing
+
+This example demonstrates how to parse user input into custom objects:
+
+```tsx
+import React from "react"
+
+import {
+  TagsInput,
+  TagsInputGroup,
+  TagsInputInput,
+  TagsInputItem,
+  TagsInputItemText,
+} from "@repo/tags-input"
+
+function App() {
+  const [tags, setTags] = React.useState([])
+
+  return (
+    <TagsInput
+      value={tags}
+      onChange={setTags}
+      parseInput={(input) => ({ id: Date.now(), value: input })}
+    >
+      <TagsInputGroup>
+        {tags.map((tag) => (
+          <TagsInputItem key={tag.id}>
+            <TagsInputItemText>{tag.value}</TagsInputItemText>
+          </TagsInputItem>
+        ))}
+        <TagsInputInput placeholder="Enter tags..." />
+      </TagsInputGroup>
+    </TagsInput>
+  )
+}
+```
+
+### Case-Sensitive Duplicate Handling
+
+```tsx
+import React from "react"
+
+import { TagsInput } from "@repo/tags-input"
+
+function App() {
+  return <TagsInput allowDuplicates={false} caseSensitiveDuplicates={true} />
+}
+```
+
+### Max Tags Restriction
+
+```tsx
+import React from "react"
+
+import { TagsInput } from "@repo/tags-input"
+
+function App() {
+  return <TagsInput maxTags={5} />
+}
+```
+
+## License
+
+This component is licensed under the MIT License. See the `LICENSE` file for details.
+
+```yaml
+license: MIT
+file: LICENSE
+```
