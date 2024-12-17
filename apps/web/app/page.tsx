@@ -236,20 +236,15 @@ export default function Home() {
                     </TagsInputGroup>
                     <Command>
                       <FormControl>
-                        <CommandInput
-                          asChild
-                          placeholder="Search tags..."
-                          className="h-9"
-                        >
+                        <CommandInput asChild className="h-9">
                           <TagsInputInput
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
                                 e.preventDefault()
                               }
                             }}
-                            delimiters={[]}
-                            // onPaste={(e) => e.preventDefault()}
-                            placeholder="Enter tags"
+                            onPaste={(e) => e.preventDefault()}
+                            placeholder="Search tags..."
                             ref={field.ref}
                           />
                         </CommandInput>
