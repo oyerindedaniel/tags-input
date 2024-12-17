@@ -26,7 +26,7 @@ type Tag<T extends Primitive> = T | Wrapper<T> | ExtendedObject<T>
 // Context Type
 interface TagsInputContextType<T extends Tag<Primitive>> {
   tags: T[]
-  addTag: (tag: Primitive | Primitive[]) => void
+  addTags: (tag: Primitive | Primitive[]) => void
   removeTag: (index: number) => void
   inputRef: React.RefObject<HTMLInputElement>
   keyBindings: Record<React.KeyboardEvent["key"], TagsInputKeyActions>
@@ -70,10 +70,9 @@ interface TagsInputProps<T extends Tag<Primitive>>
 
   /**
    * Callback invoked when the tags array is updated.
-   * Can either accept a new array of tags or a function that receives
-   * the previous tags and returns the updated array.
+   * Accepts a new array of tags.
    *
-   * @param updatedTags - The updated tags or a function to produce them.
+   * @param updatedTags - The updated tags array.
    * @example
    * // Example with direct update:
    * onChange={(updatedTags) => console.log(updatedTags)}
@@ -176,7 +175,7 @@ interface TagsInputProps<T extends Tag<Primitive>>
 }
 
 interface TagsInputItemProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends React.HTMLAttributes<HTMLElement>,
     VariantProps<typeof tagsInputItemVariants> {
   asChild?: boolean
 }
@@ -348,16 +347,15 @@ const TagsInput = forwardRefWithGenerics(
 
     const memoizedParseInput = React.useMemo(() => parseInput, [])
 
-    const addTag = React.useCallback(
+    const addTags = React.useCallback(
       (tag: Primitive | Primitive[]) => {
-        if (
-          isTagNonInteractive ||
-          tag == null ||
-          (maxTags && tags.length >= maxTags) ||
-          (minTags && tags.length < minTags)
-        ) {
-          return
-        }
+        if (isTagNonInteractive || tag == null) return
+
+        // Pre-check for the maxTags condition
+        if (maxTags && tags.length >= maxTags) return
+
+        // Pre-check for the minTags condition
+        if (minTags && tags.length < minTags) return
 
         const arrayTags = Array.isArray(tag) ? tag : [tag]
 
@@ -369,7 +367,7 @@ const TagsInput = forwardRefWithGenerics(
         const tagsToAdd: T[] = []
 
         for (const singleTag of arrayTags) {
-          // Preprocesses the tag if parse input function is passed
+          // Preprocess the tag if a parseInput function is provided
           const parsedTag = memoizedParseInput
             ? memoizedParseInput(singleTag)
             : singleTag
@@ -379,6 +377,12 @@ const TagsInput = forwardRefWithGenerics(
             caseSensitiveDuplicates
           )
 
+          // Check if we can add more tags without exceeding maxTags
+          if (maxTags && tags.length + tagsToAdd.length >= maxTags) {
+            break
+          }
+
+          // Handle duplicates
           if (allowDuplicates) {
             tagsToAdd.push(parsedTag as T)
           } else {
@@ -395,6 +399,11 @@ const TagsInput = forwardRefWithGenerics(
           }
         }
 
+        // Final validation for minTags AFTER adding
+        if (minTags && tags.length + tagsToAdd.length < minTags) {
+          return
+        }
+
         if (tagsToAdd.length > 0) {
           setTags((prevTags) => [...prevTags, ...tagsToAdd])
         }
@@ -407,6 +416,9 @@ const TagsInput = forwardRefWithGenerics(
         isDuplicate,
         isTagNonInteractive,
         memoizedParseInput,
+        caseSensitiveDuplicates,
+        normalizeTag,
+        setTags,
       ]
     )
 
@@ -423,13 +435,13 @@ const TagsInput = forwardRefWithGenerics(
     const contextValue = React.useMemo<TagsInputContextType<T>>(
       () => ({
         tags,
-        addTag,
+        addTags,
         removeTag,
         inputRef,
         keyBindings,
         isTagNonInteractive,
       }),
-      [tags, addTag, removeTag]
+      [tags, addTags, removeTag]
     )
 
     return (
@@ -557,7 +569,7 @@ const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
     const isFocused = () => document.activeElement === itemRef.current
 
     const handleTagKeyDown = React.useCallback(
-      (e: React.KeyboardEvent<HTMLDivElement>) => {
+      (e: React.KeyboardEvent<HTMLElement>) => {
         if (onKeyDown) {
           onKeyDown(e)
 
@@ -701,7 +713,7 @@ const TagsInputInput = React.forwardRef<
     forwardedRef
   ) => {
     const {
-      addTag,
+      addTags,
       inputRef: inputContextRef,
       keyBindings,
       isTagNonInteractive,
@@ -738,15 +750,15 @@ const TagsInputInput = React.forwardRef<
                 : trimmedTag
             })
             .filter(Boolean)
-          addTag(tags)
+          addTags(tags)
         } else {
           const singleTag = !isNaN(Number(trimmedValue))
             ? Number(trimmedValue)
             : trimmedValue
-          addTag(singleTag)
+          addTags(singleTag)
         }
       },
-      [delimiterRegex, addTag]
+      [delimiterRegex, addTags]
     )
 
     const handleInputKeyDown = React.useCallback(
@@ -788,7 +800,7 @@ const TagsInputInput = React.forwardRef<
         processInputValue(pasteData)
         e.preventDefault()
       },
-      [addTag, isInputNonInteractive, processInputValue]
+      [addTags, isInputNonInteractive, processInputValue]
     )
 
     return (
