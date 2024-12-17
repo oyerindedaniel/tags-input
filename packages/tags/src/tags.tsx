@@ -271,7 +271,7 @@ function isObject<T extends Primitive>(
 const TagsInput = forwardRefWithGenerics(
   <T extends Tag<Primitive>>(
     {
-      value,
+      value = [],
       onChange,
       className,
       children,

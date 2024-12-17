@@ -58,9 +58,9 @@ export default function App() {
 | Prop                      | Type                                                      | Description                                                       | Default              |
 | ------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------- | -------------------- |
 | `value`                   | `T[]`                                                     | The array of tags or objects.                                     | `[]`                 |
-| `onChange`                | `(updatedTags: T[]) => void`                              | Callback fired when the tags change.                              | —                    |
+| `onChange`                | `(updatedTags: T[]) => void`                              | Callback fired when the tags change.                              | `undefined`          |
 | `parseInput`              | `(input: Primitive) => ExtendedObject<Primitive>`         | Function to parse input into an object (useful for complex tags). | `undefined`          |
-| `orientation`             | `"row" \| "column"`                                       | Layout orientation of the tags.                                   | —                    |
+| `orientation`             | `"row" \| "column"`                                       | Layout orientation of the tags.                                   | `column`             |
 | `inline`                  | `boolean`                                                 | Render the tags inline.                                           | `false`              |
 | `maxTags`                 | `number`                                                  | Maximum number of tags allowed.                                   | `undefined`          |
 | `minTags`                 | `number`                                                  | Minimum number of tags required.                                  | `undefined`          |

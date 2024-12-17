@@ -9,6 +9,7 @@ import { z } from "zod"
 import { useDisclosure } from "@repo/hooks/use-disclosure"
 import { useIsMounted } from "@repo/hooks/use-is-mounted"
 import {
+  Delimiters,
   TagsInput,
   TagsInputGroup,
   TagsInputInput,
@@ -58,13 +59,6 @@ function generateUniqueId(): string {
     uniqueId += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   return uniqueId
-}
-
-const customKeyboardCommands = {
-  Enter: TagsInputKeyActions.Add,
-  Backspace: TagsInputKeyActions.Remove,
-  ArrowLeft: TagsInputKeyActions.NavigateLeft,
-  ArrowRight: TagsInputKeyActions.NavigateRight,
 }
 
 const FormSchema = z.object({
@@ -149,7 +143,6 @@ export default function Home() {
                         value={field.value}
                         onChange={field.onChange}
                         caseSensitiveDuplicates
-                        keyboardCommands={customKeyboardCommands}
                       >
                         <TagsInputGroup>
                           {field.value.map((tag, idx) => (
