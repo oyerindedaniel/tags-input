@@ -28,13 +28,17 @@ import {
   TagsInputItem,
   TagsInputItemDelete,
   TagsInputItemText,
-} from "@repo/tags-input"
+} from "@repo/tags/tags-input"
 
 export default function App() {
   const [tags, setTags] = React.useState<string[]>(["tag1", "tag2"])
 
   return (
-    <TagsInput value={tags} onChange={setTags} maxTags={5}>
+    <TagsInput
+      value={tags}
+      onChange={(updatedTags) => setTags(updatedTags as string[])}
+      maxTags={5}
+    >
       <TagsInputGroup>
         {tags.map((tag, idx) => (
           <TagsInputItem key={idx}>
@@ -91,7 +95,7 @@ import {
   TagsInputGroup,
   TagsInputInput,
   TagsInputItem,
-} from "@repo/tags-input"
+} from "@repo/tags/tags-input"
 
 function App() {
   return (
@@ -124,7 +128,7 @@ The `keyboardCommands` prop allows customization of keyboard shortcuts for tag m
 ```tsx
 import React from "react"
 
-import { TagsInput, TagsInputKeyActions } from "@repo/tags-input"
+import { TagsInput, TagsInputKeyActions } from "@repo/tags/tags-input"
 
 const customKeyboardCommands = {
   Escape: TagsInputKeyActions.Remove,
@@ -152,15 +156,19 @@ import {
   TagsInputInput,
   TagsInputItem,
   TagsInputItemText,
-} from "@repo/tags-input"
+} from "@repo/tags/tags-input"
 
 function App() {
-  const [tags, setTags] = React.useState([])
+  type Tag = {
+    id: number
+    value: string
+  }
+  const [tags, setTags] = React.useState<Tag[]>([])
 
   return (
     <TagsInput
       value={tags}
-      onChange={setTags}
+      onChange={(updatedTags) => setTags(updatedTags as Tag[])}
       parseInput={(input) => ({ id: Date.now(), value: input })}
     >
       <TagsInputGroup>
@@ -229,43 +237,36 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-full items-center justify-center">
-      <div className="w-2/3">
-        <h1 className="mb-5 text-xl font-semibold text-primary underline">
-          Tags Input Form
-        </h1>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField control={form.control} name="tags">
-              {({ field }) => (
-                <FormItem>
-                  <FormLabel>Tags</FormLabel>
-                  <FormControl>
-                    <TagsInput value={field.value} onChange={field.onChange}>
-                      <TagsInputGroup>
-                        {field.value.map((tag, idx) => (
-                          <TagsInputItem key={idx}>
-                            <TagsInputItemText>{tag}</TagsInputItemText>
-                            <TagsInputItemDelete />
-                          </TagsInputItem>
-                        ))}
-                        <TagsInputInput
-                          placeholder="Enter tags..."
-                          ref={field.ref}
-                        />
-                      </TagsInputGroup>
-                    </TagsInput>
-                  </FormControl>
-                  <FormDescription>These are your tags</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            </FormField>
-            <Button type="submit">Submit</Button>
-          </form>
-        </Form>
-      </div>
-    </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField control={form.control} name="tags">
+          {({ field }) => (
+            <FormItem>
+              <FormLabel>Tags</FormLabel>
+              <FormControl>
+                <TagsInput value={field.value} onChange={field.onChange}>
+                  <TagsInputGroup>
+                    {field.value.map((tag, idx) => (
+                      <TagsInputItem key={idx}>
+                        <TagsInputItemText>{tag}</TagsInputItemText>
+                        <TagsInputItemDelete />
+                      </TagsInputItem>
+                    ))}
+                    <TagsInputInput
+                      placeholder="Enter tags..."
+                      ref={field.ref}
+                    />
+                  </TagsInputGroup>
+                </TagsInput>
+              </FormControl>
+              <FormDescription>These are your tags</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        </FormField>
+        <Button type="submit">Submit</Button>
+      </form>
+    </Form>
   )
 }
 ```
@@ -303,58 +304,53 @@ const randomTags = [
   { label: "Innovative", value: "innovative" },
   { label: "Trendy", value: "trendy" },
   { label: "Modern", value: "modern" },
-]
+] as const
 
 export default function CommandPaletteTags() {
-  const [tags, setTags] = React.useState([])
+  const [tags, setTags] = React.useState<string[]>([])
 
   return (
-    <div className="flex h-full items-center justify-center">
-      <div className="w-2/3">
-        <h1 className="mb-5 text-xl font-semibold text-primary underline">
-          Command Palette Tag Selection
-        </h1>
-        <TagsInput value={tags} onChange={setTags}>
-          <TagsInputGroup>
-            {tags.map((tag, idx) => (
-              <TagsInputItem key={idx}>
-                <TagsInputItemText>{tag}</TagsInputItemText>
-                <TagsInputItemDelete />
-              </TagsInputItem>
+    <TagsInput
+      value={tags}
+      onChange={(updatedTags) => setTags(updatedTags as string[])}
+    >
+      <TagsInputGroup>
+        {tags.map((tag, idx) => (
+          <TagsInputItem key={idx}>
+            <TagsInputItemText>{tag}</TagsInputItemText>
+            <TagsInputItemDelete />
+          </TagsInputItem>
+        ))}
+      </TagsInputGroup>
+      <Command>
+        <CommandInput asChild>
+          <TagsInputInput
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+              }
+            }}
+            onPaste={(e) => e.preventDefault()}
+            placeholder="Search tags..."
+          />
+        </CommandInput>
+        <CommandList>
+          <CommandEmpty>No tag found</CommandEmpty>
+          <CommandGroup>
+            {randomTags.map((tag) => (
+              <CommandItem
+                key={tag.value}
+                value={tag.label}
+                onSelect={() => setTags([...tags, tag.value])}
+              >
+                {tag.label}
+                <Check className="ml-auto opacity-100" />
+              </CommandItem>
             ))}
-          </TagsInputGroup>
-          <Command>
-            <CommandInput asChild>
-              <TagsInputInput
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault()
-                  }
-                }}
-                onPaste={(e) => e.preventDefault()}
-                placeholder="Search tags..."
-                ref={field.ref}
-              />
-            </CommandInput>
-            <CommandList>
-              <CommandEmpty>No tag found</CommandEmpty>
-              <CommandGroup>
-                {randomTags.map((tag) => (
-                  <CommandItem
-                    key={tag.value}
-                    value={tag.label}
-                    onSelect={() => setTags([...tags, tag.value])}
-                  >
-                    {tag.label}
-                    <Check className="ml-auto opacity-100" />
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </TagsInput>
-      </div>
-    </div>
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    </TagsInput>
   )
 }
 ```
@@ -364,7 +360,7 @@ export default function CommandPaletteTags() {
 ```tsx
 import React from "react"
 
-import { TagsInput } from "@repo/tags-input"
+import { TagsInput } from "@repo/tags/tags-input"
 
 function App() {
   return <TagsInput allowDuplicates={false} caseSensitiveDuplicates={true} />
@@ -376,7 +372,7 @@ function App() {
 ```tsx
 import React from "react"
 
-import { TagsInput } from "@repo/tags-input"
+import { TagsInput } from "@repo/tags/tags-input"
 
 function App() {
   return <TagsInput maxTags={5} />

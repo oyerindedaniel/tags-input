@@ -28,13 +28,17 @@ import {
   TagsInputItem,
   TagsInputItemDelete,
   TagsInputItemText,
-} from "@repo/tags-input"
+} from "@repo/tags/tags-input"
 
 export default function App() {
   const [tags, setTags] = React.useState<string[]>(["tag1", "tag2"])
 
   return (
-    <TagsInput value={tags} onChange={setTags} maxTags={5}>
+    <TagsInput
+      value={tags}
+      onChange={(updatedTags) => setTags(updatedTags as string[])}
+      maxTags={5}
+    >
       <TagsInputGroup>
         {tags.map((tag, idx) => (
           <TagsInputItem key={idx}>
@@ -91,7 +95,7 @@ import {
   TagsInputGroup,
   TagsInputInput,
   TagsInputItem,
-} from "@repo/tags-input"
+} from "@repo/tags/tags-input"
 
 function App() {
   return (
@@ -124,7 +128,7 @@ The `keyboardCommands` prop allows customization of keyboard shortcuts for tag m
 ```tsx
 import React from "react"
 
-import { TagsInput, TagsInputKeyActions } from "@repo/tags-input"
+import { TagsInput, TagsInputKeyActions } from "@repo/tags/tags-input"
 
 const customKeyboardCommands = {
   Escape: TagsInputKeyActions.Remove,
@@ -152,15 +156,19 @@ import {
   TagsInputInput,
   TagsInputItem,
   TagsInputItemText,
-} from "@repo/tags-input"
+} from "@repo/tags/tags-input"
 
 function App() {
-  const [tags, setTags] = React.useState([])
+  type Tag = {
+    id: number
+    value: string
+  }
+  const [tags, setTags] = React.useState<Tag[]>([])
 
   return (
     <TagsInput
       value={tags}
-      onChange={setTags}
+      onChange={(updatedTags) => setTags(updatedTags as Tag[])}
       parseInput={(input) => ({ id: Date.now(), value: input })}
     >
       <TagsInputGroup>
@@ -176,12 +184,183 @@ function App() {
 }
 ```
 
+### Tags Input Form with Validation
+
+This example demonstrates how to use the `TagsInput` component in a form, with validation using Zod and React Hook Form.
+
+```tsx
+"use client"
+
+import React from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+
+import {
+  TagsInput,
+  TagsInputGroup,
+  TagsInputInput,
+  TagsInputItem,
+  TagsInputItemDelete,
+  TagsInputItemText,
+} from "@repo/tags/tags-input"
+import { Button } from "@repo/ui/button"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@repo/ui/form"
+import { toast } from "@repo/ui/use-toast"
+
+const FormSchema = z.object({
+  tags: z
+    .array(z.string().min(1, "At least one tag is required"))
+    .min(1, { message: "You must enter at least one tag." }),
+})
+
+export default function Home() {
+  const form = useForm({
+    resolver: zodResolver(FormSchema),
+    defaultValues: { tags: [] },
+  })
+
+  const onSubmit = (data) => {
+    toast({
+      title: "You submitted the following tags:",
+      description: <pre>{JSON.stringify(data, null, 2)}</pre>,
+    })
+    form.reset()
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField control={form.control} name="tags">
+          {({ field }) => (
+            <FormItem>
+              <FormLabel>Tags</FormLabel>
+              <FormControl>
+                <TagsInput value={field.value} onChange={field.onChange}>
+                  <TagsInputGroup>
+                    {field.value.map((tag, idx) => (
+                      <TagsInputItem key={idx}>
+                        <TagsInputItemText>{tag}</TagsInputItemText>
+                        <TagsInputItemDelete />
+                      </TagsInputItem>
+                    ))}
+                    <TagsInputInput
+                      placeholder="Enter tags..."
+                      ref={field.ref}
+                    />
+                  </TagsInputGroup>
+                </TagsInput>
+              </FormControl>
+              <FormDescription>These are your tags</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        </FormField>
+        <Button type="submit">Submit</Button>
+      </form>
+    </Form>
+  )
+}
+```
+
+### Command Palette for Tag Selection
+
+This example demonstrates how to integrate a command palette for selecting tags using the `cmdk` library.
+
+```tsx
+"use client"
+
+import React from "react"
+import { Check } from "lucide-react"
+
+import {
+  TagsInput,
+  TagsInputGroup,
+  TagsInputInput,
+  TagsInputItem,
+  TagsInputItemDelete,
+  TagsInputItemText,
+} from "@repo/tags/tags-input"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@repo/ui/command"
+
+const randomTags = [
+  { label: "Cool", value: "cool" },
+  { label: "Awesome", value: "awesome" },
+  { label: "Innovative", value: "innovative" },
+  { label: "Trendy", value: "trendy" },
+  { label: "Modern", value: "modern" },
+] as const
+
+export default function CommandPaletteTags() {
+  const [tags, setTags] = React.useState<string[]>([])
+
+  return (
+    <TagsInput
+      value={tags}
+      onChange={(updatedTags) => setTags(updatedTags as string[])}
+    >
+      <TagsInputGroup>
+        {tags.map((tag, idx) => (
+          <TagsInputItem key={idx}>
+            <TagsInputItemText>{tag}</TagsInputItemText>
+            <TagsInputItemDelete />
+          </TagsInputItem>
+        ))}
+      </TagsInputGroup>
+      <Command>
+        <CommandInput asChild>
+          <TagsInputInput
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault()
+              }
+            }}
+            onPaste={(e) => e.preventDefault()}
+            placeholder="Search tags..."
+          />
+        </CommandInput>
+        <CommandList>
+          <CommandEmpty>No tag found</CommandEmpty>
+          <CommandGroup>
+            {randomTags.map((tag) => (
+              <CommandItem
+                key={tag.value}
+                value={tag.label}
+                onSelect={() => setTags([...tags, tag.value])}
+              >
+                {tag.label}
+                <Check className="ml-auto opacity-100" />
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    </TagsInput>
+  )
+}
+```
+
 ### Case-Sensitive Duplicate Handling
 
 ```tsx
 import React from "react"
 
-import { TagsInput } from "@repo/tags-input"
+import { TagsInput } from "@repo/tags/tags-input"
 
 function App() {
   return <TagsInput allowDuplicates={false} caseSensitiveDuplicates={true} />
@@ -193,7 +372,7 @@ function App() {
 ```tsx
 import React from "react"
 
-import { TagsInput } from "@repo/tags-input"
+import { TagsInput } from "@repo/tags/tags-input"
 
 function App() {
   return <TagsInput maxTags={5} />
