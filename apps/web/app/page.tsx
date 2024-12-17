@@ -2,7 +2,7 @@
 
 import React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -15,6 +15,7 @@ import {
   TagsInputItem,
   TagsInputItemDelete,
   TagsInputItemText,
+  TagsInputKeyActions,
 } from "@repo/tags/tags-input"
 import { Button } from "@repo/ui/button"
 import {
@@ -57,6 +58,13 @@ function generateUniqueId(): string {
     uniqueId += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   return uniqueId
+}
+
+const customKeyboardCommands = {
+  Enter: TagsInputKeyActions.Add,
+  Backspace: TagsInputKeyActions.Remove,
+  ArrowLeft: TagsInputKeyActions.NavigateLeft,
+  ArrowRight: TagsInputKeyActions.NavigateRight,
 }
 
 const FormSchema = z.object({
@@ -141,6 +149,7 @@ export default function Home() {
                         value={field.value}
                         onChange={field.onChange}
                         caseSensitiveDuplicates
+                        keyboardCommands={customKeyboardCommands}
                       >
                         <TagsInputGroup>
                           {field.value.map((tag, idx) => (
@@ -177,7 +186,6 @@ export default function Home() {
                     <TagsInput
                       value={field.value}
                       onChange={field.onChange}
-                      caseSensitiveDuplicates
                       parseInput={(tag) => ({
                         value: tag,
                         id: generateUniqueId(),

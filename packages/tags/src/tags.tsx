@@ -77,12 +77,8 @@ interface TagsInputProps<T extends Tag<Primitive>>
    * @example
    * // Example with direct update:
    * onChange={(updatedTags) => console.log(updatedTags)}
-   *
-   * @example
-   * // Example with functional update:
-   * onChange={(prevTags) => [...prevTags, { value: "newTag" }]}
    */
-  onChange?: (updatedTags: T[] | ((prevTags: T[]) => T[])) => void
+  onChange?: (updatedTags: T[]) => void
 
   /**
    * Function to parse input into a tag object.
@@ -170,10 +166,10 @@ interface TagsInputProps<T extends Tag<Primitive>>
    * @default defaultKeyBindings
    * @example
    * keyboardCommands={{
-   *   Enter: "add",
-   *   Backspace: "remove",
-   *   ArrowLeft: "navigateLeft",
-   *   ArrowRight: "navigateRight"
+   *   Enter: TagsInputKeyActions.Add,
+   *   Backspace: TagsInputKeyActions.Remove,
+   *   ArrowLeft: TagsInputKeyActions.NavigateLeft,
+   *   ArrowRight: TagsInputKeyActions.NavigateRight
    * }}
    */
   keyboardCommands?: Record<React.KeyboardEvent["key"], TagsInputKeyActions>
@@ -187,12 +183,6 @@ interface TagsInputItemProps
 interface TagsInputItemTextProps
   extends React.HTMLAttributes<HTMLSpanElement> {}
 interface TagsInputGroupProps extends React.HTMLAttributes<HTMLDivElement> {}
-interface TagsInputItemDeleteProps
-  extends React.HTMLAttributes<HTMLButtonElement> {}
-interface TagsInputInputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {
-  delimiters?: Delimiters[]
-}
 
 export enum Delimiters {
   Comma = ",",
@@ -341,20 +331,19 @@ const TagsInput = forwardRefWithGenerics(
       return caseSensitive ? String(tag) : String(tag).toLowerCase()
     }
 
-    // Check for duplicates based on the original tag
+    // Checks for duplicates based on the unique normalized tag and normalized existing tag
     const isDuplicate = React.useCallback(
-      (tag: T | T[]): boolean => {
-        const tagsToCheck = Array.isArray(tag) ? tag : [tag]
-        const normalizedTags = tags.map((tag) =>
-          normalizeTag(tag, caseSensitiveDuplicates)
+      (
+        normalizedTag: Primitive,
+        uniqueNormalizedTags: Set<Primitive>,
+        normalizedExistingTags: Set<Primitive>
+      ): boolean => {
+        return (
+          uniqueNormalizedTags.has(normalizedTag) ||
+          normalizedExistingTags.has(normalizedTag)
         )
-
-        return tagsToCheck.some((singleTag) => {
-          const normalizedTag = normalizeTag(singleTag, caseSensitiveDuplicates)
-          return normalizedTags.includes(normalizedTag)
-        })
       },
-      [tags, caseSensitiveDuplicates]
+      []
     )
 
     const memoizedParseInput = React.useMemo(() => parseInput, [])
@@ -370,17 +359,16 @@ const TagsInput = forwardRefWithGenerics(
           return
         }
 
-        const tagsToAdd = Array.isArray(tag) ? tag : [tag]
+        const arrayTags = Array.isArray(tag) ? tag : [tag]
 
-        // Normalizes the incoming tags for deduplication within the batch
         const normalizedExistingTags = new Set(
           tags.map((tag) => normalizeTag(tag, caseSensitiveDuplicates))
         )
 
         const uniqueNormalizedTags = new Set<Primitive>()
-        const uniqueTagsToAdd: T[] = []
+        const tagsToAdd: T[] = []
 
-        for (const singleTag of tagsToAdd) {
+        for (const singleTag of arrayTags) {
           // Preprocesses the tag if parse input function is passed
           const parsedTag = memoizedParseInput
             ? memoizedParseInput(singleTag)
@@ -392,20 +380,23 @@ const TagsInput = forwardRefWithGenerics(
           )
 
           if (allowDuplicates) {
-            uniqueTagsToAdd.push(parsedTag as T)
+            tagsToAdd.push(parsedTag as T)
           } else {
             if (
-              !uniqueNormalizedTags.has(normalizedTag) &&
-              !normalizedExistingTags.has(normalizedTag)
+              !isDuplicate(
+                normalizedTag,
+                uniqueNormalizedTags,
+                normalizedExistingTags
+              )
             ) {
               uniqueNormalizedTags.add(normalizedTag)
-              uniqueTagsToAdd.push(parsedTag as T)
+              tagsToAdd.push(parsedTag as T)
             }
           }
         }
 
-        if (uniqueTagsToAdd.length > 0) {
-          setTags((prevTags) => [...prevTags, ...uniqueTagsToAdd])
+        if (tagsToAdd.length > 0) {
+          setTags((prevTags) => [...prevTags, ...tagsToAdd])
         }
       },
       [

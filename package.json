@@ -1,5 +1,6 @@
 {
   "name": "tags-input",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -28,5 +29,6 @@
   },
   "dependencies": {
     "tailwindcss-animate": "^1.0.7"
-  }
+  },
+  "license": "MIT"
 }
