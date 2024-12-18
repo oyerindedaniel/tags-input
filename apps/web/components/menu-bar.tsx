@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { siteConfig } from "@/config/site"
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 
@@ -18,7 +19,7 @@ export default function MenuBar() {
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild>
           <a
-            href="https://github.com/oyerindedaniel/tags-input"
+            href={siteConfig.links.github}
             target="_blank"
             rel="noopener noreferrer"
           >
