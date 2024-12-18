@@ -14,13 +14,14 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,mdx}\" --cache"
   },
   "dependencies": {
-    "@repo/hooks": "workspace:*",
     "@hookform/resolvers": "^3.9.1",
+    "@repo/hooks": "workspace:*",
     "@repo/tags": "workspace:*",
     "@repo/ui": "workspace:*",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "next": "14.2.6",
+    "next-themes": "^0.4.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-hook-form": "^7.53.2",

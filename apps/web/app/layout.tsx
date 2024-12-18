@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
 import localFont from "next/font/local"
+import MenuBar from "@/components/menu-bar"
+import { ThemeProvider } from "@/components/theme-provider"
 
 import { cn } from "@repo/ui/utils"
 
@@ -29,13 +31,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={cn(
-          "min-h-dvh py-12",
-          geistSans.variable,
-          geistMono.variable
-        )}
+        className={cn("min-h-svh p-8", geistSans.variable, geistMono.variable)}
       >
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <div className="mx-auto h-full w-full max-w-[800px]">
+            <MenuBar />
+            <div className="mt-6">{children}</div>
+          </div>
+        </ThemeProvider>
         <Toaster />
       </body>
     </html>
