@@ -7,7 +7,7 @@ export const siteConfig = {
   url:
     process.env.NODE_ENV === "development"
       ? "http://localhost:3005"
-      : process.env.WEBSITE_URL || "",
+      : "http://localhost:3005",
   links: { github: "https://github.com/oyerindedaniel/tags-input" },
-  author: { name: "Oyerinde Daniel", url: "" },
+  author: { name: "Oyerinde Daniel", url: "http://localhost:3005" },
 }
