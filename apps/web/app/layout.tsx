@@ -58,9 +58,6 @@ export const metadata: Metadata = {
     description: siteConfig.description,
     creator: siteConfig.author.name,
   },
-  icons: {
-    icon: "/icon.png",
-  },
 }
 
 export const viewport: Viewport = {
@@ -79,7 +76,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={cn("min-h-svh p-8", geistSans.variable, geistMono.variable)}
+        className={cn(
+          "min-h-svh bg-background p-8",
+          geistSans.variable,
+          geistMono.variable
+        )}
       >
         <ThemeProvider
           attribute="class"

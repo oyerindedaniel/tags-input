@@ -3,7 +3,7 @@ export type SiteConfig = typeof siteConfig
 export const siteConfig = {
   name: "Tags Input",
   description:
-    "flexible and customizable React component for inputting, managing, and displaying tags",
+    "flexible and customizable react component for inputting, managing, and displaying tags",
   url:
     process.env.NODE_ENV === "development"
       ? "http://localhost:3005"
