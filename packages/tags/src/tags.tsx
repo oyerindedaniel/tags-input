@@ -717,6 +717,8 @@ const TagsInputInput = React.forwardRef<
       inputRef: inputContextRef,
       keyBindings,
       isTagNonInteractive,
+      removeTag,
+      tags,
     } = useTagsInput()
 
     const isInputNonInteractive = disabled || readOnly || isTagNonInteractive
@@ -737,28 +739,19 @@ const TagsInputInput = React.forwardRef<
     const processInputValue = React.useCallback(
       (value: string) => {
         const trimmedValue = value.trim()
-
         if (!trimmedValue) return
 
-        if (delimiterRegex.test(trimmedValue)) {
-          const tags = trimmedValue
-            .split(delimiterRegex)
-            .map((tag) => {
-              const trimmedTag = tag.trim()
-              return !isNaN(Number(trimmedTag))
-                ? Number(trimmedTag)
-                : trimmedTag
-            })
-            .filter(Boolean)
-          addTags(tags)
-        } else {
-          const singleTag = !isNaN(Number(trimmedValue))
-            ? Number(trimmedValue)
-            : trimmedValue
-          addTags(singleTag)
-        }
+        const parseTag = (tag: string) =>
+          !isNaN(Number(tag)) ? Number(tag) : tag.trim()
+
+        const tags =
+          delimiters.length && delimiterRegex.test(trimmedValue)
+            ? trimmedValue.split(delimiterRegex).map(parseTag).filter(Boolean)
+            : [parseTag(trimmedValue)]
+
+        addTags(tags)
       },
-      [delimiterRegex, addTags]
+      [delimiterRegex, addTags, delimiters]
     )
 
     const handleInputKeyDown = React.useCallback(
@@ -774,7 +767,11 @@ const TagsInputInput = React.forwardRef<
         if (isInputNonInteractive || !inputRef.current) return
 
         const command = keyBindings[e.key]
-        if (command === TagsInputKeyActions.Add) {
+        if (command === TagsInputKeyActions.Remove) {
+          if (inputRef.current.value === "") {
+            removeTag(Math.max(0, tags.length - 1)) // Removes the last tag
+          }
+        } else if (command === TagsInputKeyActions.Add) {
           e.preventDefault()
           processInputValue(inputRef.current.value)
           inputRef.current.value = ""
