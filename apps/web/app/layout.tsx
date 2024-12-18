@@ -4,8 +4,7 @@ import localFont from "next/font/local"
 import MenuBar from "@/components/menu-bar"
 import { ThemeProvider } from "@/components/theme-provider"
 import { siteConfig } from "@/config/site"
-
-import { cn } from "@repo/ui/utils"
+import { cn } from "@/lib/utils"
 
 import "@repo/ui/styles"
 

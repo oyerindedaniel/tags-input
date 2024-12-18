@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+import { cn } from "@/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Check } from "lucide-react"
 import { useForm } from "react-hook-form"
@@ -39,7 +39,6 @@ import {
   FormMessage,
 } from "@repo/ui/form"
 import { toast } from "@repo/ui/use-toast"
-import { cn } from "@repo/ui/utils"
 
 function generateRandomWord(length = 5) {
   const characters = "abcdefghijklmnopqrstuvwxyz"

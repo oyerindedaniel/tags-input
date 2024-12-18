@@ -7,7 +7,7 @@ export const siteConfig = {
   url:
     process.env.NODE_ENV === "development"
       ? "http://localhost:3005"
-      : "http://localhost:3005",
+      : "https://tags-input-web.vercel.app",
   links: { github: "https://github.com/oyerindedaniel/tags-input" },
-  author: { name: "Oyerinde Daniel", url: "http://localhost:3005" },
+  author: { name: "Oyerinde Daniel", url: "https://tags-input-web.vercel.app" },
 }
