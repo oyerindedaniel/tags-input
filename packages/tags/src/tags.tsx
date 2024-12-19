@@ -2,7 +2,6 @@
 
 import type { VariantProps } from "class-variance-authority"
 import * as React from "react"
-import { cn } from "@/lib/utils"
 import { Slot } from "@radix-ui/react-slot"
 import { cva } from "class-variance-authority"
 import { X } from "lucide-react"
@@ -10,6 +9,7 @@ import { X } from "lucide-react"
 import { useControllableState } from "@repo/hooks/use-controllable-state"
 import { Button } from "@repo/ui/button"
 import { Input } from "@repo/ui/input"
+import { cn } from "@repo/ui/utils"
 
 type Primitive = string | number
 
