@@ -217,16 +217,16 @@ const TagsInputContext = React.createContext<TagsInputContextType<
   Tag<Primitive>
 > | null>(null)
 
-const useTagsInput = <T extends Tag<Primitive>>(): TagsInputContextType<T> => {
-  const context = React.useContext(
-    TagsInputContext as unknown as React.Context<TagsInputContextType<T>>
-  )
+const useTagsInput = (): TagsInputContextType<Tag<Primitive>> => {
+  const context = React.useContext(TagsInputContext)
 
   if (!context) {
-    throw new Error("TagsInput components must be used within a TagsInput.")
+    throw new Error(
+      "The `useTagsInput` hook must be used within a `TagsInputProvider`."
+    )
   }
 
-  return context as TagsInputContextType<T>
+  return context
 }
 
 function forwardRefWithGenerics<
@@ -256,7 +256,7 @@ function mergeRefs<T>(
 }
 
 function isObject<T extends Primitive>(
-  value: unknown
+  value: Tag<T>
 ): value is ExtendedObject<T> {
   return (
     typeof value === "object" &&
@@ -455,11 +455,7 @@ const TagsInput = forwardRefWithGenerics(
         )}
         {...rest}
       >
-        <TagsInputContext.Provider
-          value={
-            contextValue as unknown as TagsInputContextType<Tag<Primitive>>
-          }
-        >
+        <TagsInputContext.Provider value={contextValue}>
           {children}
         </TagsInputContext.Provider>
       </div>
@@ -478,7 +474,9 @@ const useTagsInputGroup = () => {
   const context = React.useContext(TagsInputGroupContext)
 
   if (!context) {
-    throw new Error("Components must be used within a TagsInputGroup Provider.")
+    throw new Error(
+      "The `useTagsInputGroup` hook must be used within a `TagsInputGroupProvider`"
+    )
   }
 
   return context
