@@ -518,7 +518,7 @@ const TagsInputGroup: React.FC<TagsInputGroupProps> = ({
 TagsInputGroup.displayName = "TagsInputGroup"
 
 const tagsInputItemVariants = cva(
-  "flex shrink-0 items-center justify-between rounded-md text-primary-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 group-data-[orientation=row]:w-full [&_svg]:shrink-0 disabled:[&_svg]:pointer-events-none",
+  "inline-flex shrink-0 items-center justify-between text-primary-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 group-data-[orientation=row]:w-full [&_svg]:shrink-0 disabled:[&_svg]:pointer-events-none",
   {
     variants: {
       variant: {
@@ -532,6 +532,12 @@ const tagsInputItemVariants = cva(
         ghost:
           "text-accent-foreground hover:bg-accent hover:text-accent-foreground/80",
       },
+      shape: {
+        default: "rounded-md",
+        rounded: "rounded-full",
+        square: "rounded-none",
+        pill: "rounded-lg",
+      },
       size: {
         default: "h-8 px-2 text-sm",
         sm: "h-7 px-2 text-sm",
@@ -539,6 +545,7 @@ const tagsInputItemVariants = cva(
       },
     },
     defaultVariants: {
+      shape: "default",
       variant: "default",
       size: "default",
     },
@@ -547,7 +554,7 @@ const tagsInputItemVariants = cva(
 
 const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
   (
-    { className, asChild = false, variant, size, onKeyDown, ...rest },
+    { className, asChild = false, variant, size, shape, onKeyDown, ...rest },
     forwardedRef
   ) => {
     const { removeTag, inputRef, isTagNonInteractive, keyBindings } =
@@ -625,7 +632,7 @@ const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
         aria-disabled={isTagNonInteractive}
         onKeyDown={handleTagKeyDown}
         className={cn(
-          tagsInputItemVariants({ variant, size }),
+          tagsInputItemVariants({ variant, size, shape }),
           isTagNonInteractive &&
             "pointer-events-none cursor-not-allowed opacity-50",
           className

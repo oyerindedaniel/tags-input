@@ -121,8 +121,6 @@ export default function Home() {
     form.reset()
   }
 
-  // if (!isMounted) return
-
   return (
     <div className="h-full">
       <h1 className="mb-5 text-xl font-semibold text-primary underline">
@@ -145,9 +143,9 @@ export default function Home() {
                     >
                       <TagsInputGroup>
                         {field.value.map((tag, idx) => (
-                          <TagsInputItem size="sm" key={idx}>
+                          <TagsInputItem shape="rounded" size="sm" key={idx}>
                             <TagsInputItemText>{tag}</TagsInputItemText>
-                            <TagsInputItemDelete />
+                            <TagsInputItemDelete className="rounded-full" />
                           </TagsInputItem>
                         ))}
                         <TagsInputInput
