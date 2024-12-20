@@ -121,7 +121,7 @@ export default function Home() {
     form.reset()
   }
 
-  if (!isMounted) return
+  // if (!isMounted) return
 
   return (
     <div className="h-full">
@@ -251,7 +251,7 @@ export default function Home() {
 
                     {/* <CommandDialog open={isOpen} onOpenChange={onClose}> */}
                     <CommandList>
-                      <CommandEmpty>No tag found.</CommandEmpty>
+                      {isMounted && <CommandEmpty>No tag found.</CommandEmpty>}
                       <CommandGroup>
                         {randomTags
                           .filter((tag) => !field.value.includes(tag.value))
