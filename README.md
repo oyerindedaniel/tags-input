@@ -118,8 +118,8 @@ The `keyboardCommands` prop allows customization of keyboard shortcuts for tag m
 | Key          | Action                  |
 | ------------ | ----------------------- |
 | `Enter`      | Add a new tag.          |
-| `Backspace`  | Remove the last tag.    |
-| `Delete`     | Remove the focused tag. |
+| `Backspace`  | Remove the last/focused tag.    |
+| `Delete`     | Remove the last/focused tag. |
 | `ArrowLeft`  | Navigate left.          |
 | `ArrowRight` | Navigate right.         |
 
