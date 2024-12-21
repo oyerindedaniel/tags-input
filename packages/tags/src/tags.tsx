@@ -450,7 +450,7 @@ const TagsInput = forwardRefWithGenerics(
         data-orientation={orientation}
         data-inline={inline}
         className={cn(
-          "group flex flex-col space-y-2 data-[inline=true]:mx-auto data-[inline=true]:max-w-96 data-[inline=true]:rounded-md data-[inline=true]:border data-[inline=true]:border-secondary data-[inline=true]:px-3 data-[inline=true]:py-2.5",
+          "group flex flex-col space-y-2 overflow-x-auto data-[inline=true]:mx-auto data-[inline=true]:max-w-[450px] data-[inline=true]:rounded-md data-[inline=true]:border data-[inline=true]:border-secondary data-[inline=true]:px-3 data-[inline=true]:py-2.5",
           className
         )}
         {...rest}
@@ -816,7 +816,7 @@ const TagsInputInput = React.forwardRef<
         onKeyDown={handleInputKeyDown}
         onPaste={handleInputPaste}
         className={cn(
-          "grow [[data-inline=true][data-orientation=column]_&]:basis-3/5",
+          "grow [[data-inline=true][data-orientation=column]_&]:basis-2/4",
           className
         )}
         {...rest}
