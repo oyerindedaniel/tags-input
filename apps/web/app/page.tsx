@@ -141,7 +141,6 @@ export default function Home() {
                       onChange={field.onChange}
                       caseSensitiveDuplicates
                       inline
-                      orientation="column"
                     >
                       <TagsInputGroup>
                         {field.value.map((tag, idx) => (
