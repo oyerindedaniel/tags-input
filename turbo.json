@@ -13,6 +13,10 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "format:write": {
+      "cache": false,
+      "outputs": []
     }
   },
   "globalEnv": ["NODE_ENV"]
