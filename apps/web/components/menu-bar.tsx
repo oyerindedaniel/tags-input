@@ -15,7 +15,7 @@ export default function MenuBar() {
   }, [setTheme, resolvedTheme])
 
   return (
-    <div className="sticky right-0 top-8 ml-auto w-fit bg-background">
+    <div className="sticky top-8 ml-auto w-fit bg-background">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild>
           <a
@@ -41,7 +41,7 @@ export default function MenuBar() {
           </a>
         </Button>
         <Button
-          className="overflow-hidden transition-colors duration-300"
+          className="overflow-hidden"
           variant="ghost"
           size="icon"
           onClick={toggleTheme}

@@ -98,6 +98,7 @@ const randomTags = [
 
 export default function Home() {
   const { isOpen, onOpen, onClose, toggle } = useDisclosure()
+  const [tags, setTags] = React.useState<string[]>(["tag1", "tag2"])
   const isMounted = useIsMounted()
 
   const form = useForm<z.infer<typeof FormSchema>>({
@@ -126,27 +127,89 @@ export default function Home() {
       <h1 className="mb-5 text-xl font-semibold text-primary underline">
         Tags Input
       </h1>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="tags"
-            render={({ field }) => {
-              return (
+      <div className="mb-5">
+        <h2 className="mb-3 text-lg font-semibold text-primary underline">
+          Uncontrolled
+        </h2>
+        <TagsInput defaultValue={["tag1", "tag2"]}>
+          {({ tags }) => (
+            <TagsInputGroup>
+              {tags.map((tag, idx) => (
+                <TagsInputItem key={idx} size="sm">
+                  <TagsInputItemText>{tag}</TagsInputItemText>
+                  <TagsInputItemDelete />
+                </TagsInputItem>
+              ))}
+              <TagsInputInput placeholder="Add tags..." />
+            </TagsInputGroup>
+          )}
+        </TagsInput>
+      </div>
+      <div>
+        <h2 className="mb-3 text-lg font-semibold text-primary underline">
+          Controlled
+        </h2>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="tags"
+              render={({ field }) => {
+                return (
+                  <FormItem>
+                    <FormLabel>Tags</FormLabel>
+                    <FormControl>
+                      <TagsInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        caseSensitiveDuplicates
+                        inline
+                      >
+                        <TagsInputGroup>
+                          {field.value.map((tag, idx) => (
+                            <TagsInputItem shape="rounded" size="sm" key={idx}>
+                              <TagsInputItemText>{tag}</TagsInputItemText>
+                              <TagsInputItemDelete className="rounded-full" />
+                            </TagsInputItem>
+                          ))}
+                          <TagsInputInput
+                            placeholder="Enter tags"
+                            ref={field.ref}
+                          />
+                        </TagsInputGroup>
+                      </TagsInput>
+                    </FormControl>
+                    <FormDescription>These are your tags</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
+            />
+            <FormField
+              control={form.control}
+              name="items"
+              render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tags</FormLabel>
+                  <FormLabel>
+                    Items{" "}
+                    <span className="font-bold text-primary">
+                      (with object example)
+                    </span>
+                  </FormLabel>
                   <FormControl>
                     <TagsInput
                       value={field.value}
                       onChange={field.onChange}
-                      caseSensitiveDuplicates
-                      inline
+                      parseInput={(tag) => ({
+                        value: tag,
+                        id: generateUniqueId(),
+                      })}
                     >
                       <TagsInputGroup>
                         {field.value.map((tag, idx) => (
-                          <TagsInputItem shape="rounded" size="sm" key={idx}>
-                            <TagsInputItemText>{tag}</TagsInputItemText>
-                            <TagsInputItemDelete className="rounded-full" />
+                          <TagsInputItem key={idx}>
+                            <TagsInputItemText>{tag.value}</TagsInputItemText>
+                            <TagsInputItemDelete />
                           </TagsInputItem>
                         ))}
                         <TagsInputInput
@@ -158,138 +221,102 @@ export default function Home() {
                   </FormControl>
                   <FormDescription>These are your tags</FormDescription>
                   <FormMessage />
-                </FormItem>
-              )
-            }}
-          />
-          <FormField
-            control={form.control}
-            name="items"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Items{" "}
-                  <span className="font-bold text-primary">
-                    (with object example)
-                  </span>
-                </FormLabel>
-                <FormControl>
-                  <TagsInput
-                    value={field.value}
-                    onChange={field.onChange}
-                    parseInput={(tag) => ({
-                      value: tag,
-                      id: generateUniqueId(),
-                    })}
+                  <Button
+                    type="button"
+                    onClick={() =>
+                      field.onChange([
+                        ...field.value,
+                        { id: generateUniqueId(), value: generateRandomWord() },
+                      ])
+                    }
                   >
+                    Add random tag
+                  </Button>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="values"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>
+                    Values{" "}
+                    <span className="font-bold text-primary">
+                      (command example)
+                    </span>
+                  </FormLabel>
+                  <TagsInput value={field.value} onChange={field.onChange}>
                     <TagsInputGroup>
                       {field.value.map((tag, idx) => (
                         <TagsInputItem key={idx}>
-                          <TagsInputItemText>{tag.value}</TagsInputItemText>
+                          <TagsInputItemText>{tag}</TagsInputItemText>
                           <TagsInputItemDelete />
                         </TagsInputItem>
                       ))}
-                      <TagsInputInput
-                        placeholder="Enter tags"
-                        ref={field.ref}
-                      />
+
+                      <Command className="border border-secondary">
+                        <FormControl>
+                          <CommandInput asChild className="h-9">
+                            <TagsInputInput
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault()
+                                }
+                              }}
+                              onPaste={(e) => e.preventDefault()}
+                              placeholder="Search tags..."
+                              ref={field.ref}
+                            />
+                          </CommandInput>
+                        </FormControl>
+
+                        {/* <CommandDialog open={isOpen} onOpenChange={onClose}> */}
+                        <CommandList>
+                          {isMounted && (
+                            <CommandEmpty>No tag found.</CommandEmpty>
+                          )}
+                          <CommandGroup>
+                            {randomTags
+                              .filter((tag) => !field.value.includes(tag.value))
+                              .map((tag) => (
+                                <CommandItem
+                                  value={tag.label}
+                                  key={tag.value}
+                                  onSelect={() => {
+                                    field.onChange([...field.value, tag.value])
+                                  }}
+                                >
+                                  {tag.label}
+                                  <Check
+                                    className={cn(
+                                      "ml-auto",
+                                      (field?.value ?? []).includes(tag.value)
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                </CommandItem>
+                              ))}
+                          </CommandGroup>
+                        </CommandList>
+                        {/* </CommandDialog> */}
+                      </Command>
                     </TagsInputGroup>
                   </TagsInput>
-                </FormControl>
-                <FormDescription>These are your tags</FormDescription>
-                <FormMessage />
-                <Button
-                  type="button"
-                  onClick={() =>
-                    field.onChange([
-                      ...field.value,
-                      { id: generateUniqueId(), value: generateRandomWord() },
-                    ])
-                  }
-                >
-                  Add random tag
-                </Button>
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="values"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>
-                  Values{" "}
-                  <span className="font-bold text-primary">
-                    (command example)
-                  </span>
-                </FormLabel>
-                <TagsInput value={field.value} onChange={field.onChange}>
-                  <TagsInputGroup>
-                    {field.value.map((tag, idx) => (
-                      <TagsInputItem key={idx}>
-                        <TagsInputItemText>{tag}</TagsInputItemText>
-                        <TagsInputItemDelete />
-                      </TagsInputItem>
-                    ))}
-                  </TagsInputGroup>
-                  <Command className="border border-secondary">
-                    <FormControl>
-                      <CommandInput asChild className="h-9">
-                        <TagsInputInput
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault()
-                            }
-                          }}
-                          onPaste={(e) => e.preventDefault()}
-                          placeholder="Search tags..."
-                          ref={field.ref}
-                        />
-                      </CommandInput>
-                    </FormControl>
-
-                    {/* <CommandDialog open={isOpen} onOpenChange={onClose}> */}
-                    <CommandList>
-                      {isMounted && <CommandEmpty>No tag found.</CommandEmpty>}
-                      <CommandGroup>
-                        {randomTags
-                          .filter((tag) => !field.value.includes(tag.value))
-                          .map((tag) => (
-                            <CommandItem
-                              value={tag.label}
-                              key={tag.value}
-                              onSelect={() => {
-                                field.onChange([...field.value, tag.value])
-                              }}
-                            >
-                              {tag.label}
-                              <Check
-                                className={cn(
-                                  "ml-auto",
-                                  (field?.value ?? []).includes(tag.value)
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                            </CommandItem>
-                          ))}
-                      </CommandGroup>
-                    </CommandList>
-                    {/* </CommandDialog> */}
-                  </Command>
-                </TagsInput>
-                <FormDescription>
-                  Select from the list of given tags
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button className="w-full" type="submit">
-            Submit
-          </Button>
-        </form>
-      </Form>
+                  <FormDescription>
+                    Select from the list of given tags
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button className="w-full" type="submit">
+              Submit
+            </Button>
+          </form>
+        </Form>
+      </div>
     </div>
   )
 }

@@ -18,6 +18,8 @@ The `TagsInput` component is a flexible and customizable React component for inp
 
 ## Usage
 
+### Controlled
+
 ```tsx
 import React from "react"
 
@@ -34,11 +36,7 @@ export default function App() {
   const [tags, setTags] = React.useState<string[]>(["tag1", "tag2"])
 
   return (
-    <TagsInput
-      value={tags}
-      onChange={(updatedTags) => setTags(updatedTags as string[])}
-      maxTags={5}
-    >
+    <TagsInput value={tags} onChange={setTags} maxTags={5}>
       <TagsInputGroup>
         {tags.map((tag, idx) => (
           <TagsInputItem key={idx}>
@@ -53,6 +51,39 @@ export default function App() {
 }
 ```
 
+### Uncontrolled
+
+```tsx
+import React from "react"
+
+import {
+  TagsInput,
+  TagsInputGroup,
+  TagsInputInput,
+  TagsInputItem,
+  TagsInputItemDelete,
+  TagsInputItemText,
+} from "@repo/tags/tags-input"
+
+export default function App() {
+  return (
+    <TagsInput maxTags={5}>
+      {({ tags }) => (
+        <TagsInputGroup>
+          {tags.map((tag, idx) => (
+            <TagsInputItem key={idx}>
+              <TagsInputItemText>{tag}</TagsInputItemText>
+              <TagsInputItemDelete />
+            </TagsInputItem>
+          ))}
+          <TagsInputInput placeholder="Add tags..." />
+        </TagsInputGroup>
+      )}
+    </TagsInput>
+  )
+}
+```
+
 ---
 
 ## Props
@@ -61,13 +92,14 @@ export default function App() {
 
 | Prop                      | Type                                                      | Description                                                       | Default              |
 | ------------------------- | --------------------------------------------------------- | ----------------------------------------------------------------- | -------------------- |
-| `value`                   | `T[]`                                                     | The array of tags or objects.                                     | `[]`                 |
-| `onChange`                | `(updatedTags: T[]) => void`                              | Callback fired when the tags change.                              | `undefined`          |
-| `parseInput`              | `(input: Primitive) => ExtendedObject<Primitive>`         | Function to parse input into an object (useful for complex tags). | `undefined`          |
+| `value`                   | `T[]`                                                     | The array of tags or objects.                                     | `-`                  |
+| `defaultValue`            | `T[]`                                                     | Default array of tags to initialize the component with.           | `-`                  |
+| `onChange`                | `(updatedTags: T[]) => void`                              | Callback fired when the tags change.                              | `-`                  |
+| `parseInput`              | `(input: Primitive) => ExtendedObject<Primitive>`         | Function to parse input into an object (useful for complex tags). | `-`                  |
 | `orientation`             | `"row" \| "column"`                                       | Layout orientation of the tags.                                   | `column`             |
 | `inline`                  | `boolean`                                                 | Render the tags inline.                                           | `false`              |
-| `maxTags`                 | `number`                                                  | Maximum number of tags allowed.                                   | `undefined`          |
-| `minTags`                 | `number`                                                  | Minimum number of tags required.                                  | `undefined`          |
+| `maxTags`                 | `number`                                                  | Maximum number of tags allowed.                                   | `-`                  |
+| `minTags`                 | `number`                                                  | Minimum number of tags required.                                  | `-`                  |
 | `allowDuplicates`         | `boolean`                                                 | Allow duplicate tags.                                             | `false`              |
 | `caseSensitiveDuplicates` | `boolean`                                                 | Enable case-sensitive duplicate checks.                           | `false`              |
 | `disabled`                | `boolean`                                                 | Disable the entire tags input component.                          | `false`              |
@@ -115,13 +147,13 @@ function App() {
 
 The `keyboardCommands` prop allows customization of keyboard shortcuts for tag management.
 
-| Key          | Action                  |
-| ------------ | ----------------------- |
-| `Enter`      | Add a new tag.          |
-| `Backspace`  | Remove the last/focused tag.    |
+| Key          | Action                       |
+| ------------ | ---------------------------- |
+| `Enter`      | Add a new tag.               |
+| `Backspace`  | Remove the last/focused tag. |
 | `Delete`     | Remove the last/focused tag. |
-| `ArrowLeft`  | Navigate left.          |
-| `ArrowRight` | Navigate right.         |
+| `ArrowLeft`  | Navigate left.               |
+| `ArrowRight` | Navigate right.              |
 
 ### Example Usage with Commands
 
@@ -163,12 +195,13 @@ function App() {
     id: number
     value: string
   }
+
   const [tags, setTags] = React.useState<Tag[]>([])
 
   return (
     <TagsInput
       value={tags}
-      onChange={(updatedTags) => setTags(updatedTags as Tag[])}
+      onChange={setTags}
       parseInput={(input) => ({ id: Date.now(), value: input })}
     >
       <TagsInputGroup>
@@ -321,35 +354,36 @@ export default function CommandPaletteTags() {
             <TagsInputItemDelete />
           </TagsInputItem>
         ))}
+
+        <Command>
+          <CommandInput asChild>
+            <TagsInputInput
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault()
+                }
+              }}
+              onPaste={(e) => e.preventDefault()}
+              placeholder="Search tags..."
+            />
+          </CommandInput>
+          <CommandList>
+            <CommandEmpty>No tag found</CommandEmpty>
+            <CommandGroup>
+              {randomTags.map((tag) => (
+                <CommandItem
+                  key={tag.value}
+                  value={tag.label}
+                  onSelect={() => setTags([...tags, tag.value])}
+                >
+                  {tag.label}
+                  <Check className="ml-auto opacity-100" />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
       </TagsInputGroup>
-      <Command>
-        <CommandInput asChild>
-          <TagsInputInput
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault()
-              }
-            }}
-            onPaste={(e) => e.preventDefault()}
-            placeholder="Search tags..."
-          />
-        </CommandInput>
-        <CommandList>
-          <CommandEmpty>No tag found</CommandEmpty>
-          <CommandGroup>
-            {randomTags.map((tag) => (
-              <CommandItem
-                key={tag.value}
-                value={tag.label}
-                onSelect={() => setTags([...tags, tag.value])}
-              >
-                {tag.label}
-                <Check className="ml-auto opacity-100" />
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </CommandList>
-      </Command>
     </TagsInput>
   )
 }

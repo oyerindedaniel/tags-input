@@ -11,6 +11,8 @@ import { Button } from "@repo/ui/button"
 import { Input } from "@repo/ui/input"
 import { cn } from "@repo/ui/utils"
 
+const TAG_ID_PREFIX = "tag"
+
 type Primitive = string | number
 
 type Wrapper<T extends Primitive> = {
@@ -18,7 +20,7 @@ type Wrapper<T extends Primitive> = {
 }
 
 type ExtendedObject<T extends Primitive> = Wrapper<T> & {
-  [key: Primitive]: unknown
+  [key: string]: unknown
 }
 
 type Tag<T extends Primitive> = T | Wrapper<T> | ExtendedObject<T>
@@ -42,7 +44,7 @@ interface TagsInputContextType<T extends Tag<Primitive>> {
 interface TagsInputProps<T extends Tag<Primitive>>
   extends Omit<
     React.HTMLAttributes<HTMLDivElement>,
-    "onChange" | "defaultValue"
+    "onChange" | "defaultValue" | "children"
   > {
   /**
    * Array of tags representing the current value.
@@ -69,6 +71,15 @@ interface TagsInputProps<T extends Tag<Primitive>>
   value?: T[]
 
   /**
+   * Default array of tags to initialize the component with.
+   * Each tag can be one of the following:
+   * - A primitive (`string` or `number`).
+   * - A wrapper object: `{ value: Primitive }`.
+   * - An extended object: `{ value: Primitive, [key: Primitive]: unknown }`.
+   */
+  defaultValue?: T[]
+
+  /**
    * Callback invoked when the tags array is updated.
    * Accepts a new array of tags.
    *
@@ -89,6 +100,11 @@ interface TagsInputProps<T extends Tag<Primitive>>
    * parseInput={(input) => ({ value: input, label: `Tag: ${input}` })}
    */
   parseInput?: (input: Primitive) => ExtendedObject<Primitive>
+
+  /**
+   * Custom renderable children or a function component.
+   */
+  children?: React.ReactNode | ((props: { tags: T[] }) => React.ReactNode)
 
   /**
    * Layout direction for displaying tags.
@@ -178,7 +194,9 @@ interface TagsInputItemProps
   extends React.HTMLAttributes<HTMLElement>,
     VariantProps<typeof tagsInputItemVariants> {
   asChild?: boolean
+  disabled?: boolean
 }
+
 interface TagsInputItemTextProps
   extends React.HTMLAttributes<HTMLSpanElement> {}
 interface TagsInputGroupProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -229,16 +247,10 @@ const useTagsInput = (): TagsInputContextType<Tag<Primitive>> => {
   return context
 }
 
-function forwardRefWithGenerics<
-  T extends Tag<Primitive>,
-  P extends TagsInputProps<T>,
-  R extends HTMLDivElement,
->(
-  render: React.ForwardRefRenderFunction<R, React.PropsWithoutRef<P>>
-): React.ForwardRefExoticComponent<
-  React.PropsWithoutRef<P> & React.RefAttributes<R>
-> {
-  return React.forwardRef<R, P>(render)
+function forwardRefWithGenerics<T, P = {}>(
+  render: (props: P, ref: React.Ref<T>) => React.ReactNode
+): (props: P & React.RefAttributes<T>) => React.ReactNode {
+  return React.forwardRef(render as any) as any
 }
 
 function mergeRefs<T>(
@@ -270,7 +282,8 @@ function isObject<T extends Primitive>(
 const TagsInput = forwardRefWithGenerics(
   <T extends Tag<Primitive>>(
     {
-      value = [],
+      value,
+      defaultValue,
       onChange,
       className,
       children,
@@ -290,6 +303,7 @@ const TagsInput = forwardRefWithGenerics(
   ) => {
     const [_tags, _setTags] = useControllableState({
       prop: value,
+      defaultProp: defaultValue,
       onChange,
     })
 
@@ -426,10 +440,18 @@ const TagsInput = forwardRefWithGenerics(
       (index: number) => {
         if (isTagNonInteractive) return
 
-        const updatedTags = tags.filter((_, i) => i !== index)
+        // Guard to ensure the index is valid
+        if (index < 0 || index >= tags.length || !Number.isInteger(index)) {
+          return
+        }
+
+        const updatedTags = [...tags]
+        updatedTags.splice(index, 1)
         setTags(updatedTags)
+
+        inputRef.current?.focus()
       },
-      [tags]
+      [isTagNonInteractive, tags]
     )
 
     const contextValue = React.useMemo<TagsInputContextType<T>>(
@@ -441,7 +463,7 @@ const TagsInput = forwardRefWithGenerics(
         keyBindings,
         isTagNonInteractive,
       }),
-      [tags, addTags, removeTag]
+      [tags, addTags, removeTag, isTagNonInteractive, keyBindings]
     )
 
     return (
@@ -449,6 +471,7 @@ const TagsInput = forwardRefWithGenerics(
         ref={ref}
         data-orientation={orientation}
         data-inline={inline}
+        data-disabled={isTagNonInteractive}
         className={cn(
           "group flex flex-col space-y-2 data-[inline=true]:mx-auto data-[inline=true]:max-w-[450px] data-[inline=true]:rounded-md data-[inline=true]:border data-[inline=true]:border-secondary data-[inline=true]:px-3 data-[inline=true]:py-2.5",
           className
@@ -456,18 +479,21 @@ const TagsInput = forwardRefWithGenerics(
         {...rest}
       >
         <TagsInputContext.Provider value={contextValue}>
-          {children}
+          {typeof children === "function"
+            ? children({ tags: contextValue.tags })
+            : children}
         </TagsInputContext.Provider>
       </div>
     )
   }
 )
 
-TagsInput.displayName = "TagsInput"
+// TagsInput.displayName = "TagsInput"
 
 const TagsInputGroupContext = React.createContext<{
   keyIndex: number
   textIdPrefix: string
+  groupRef: React.RefObject<HTMLDivElement>
 } | null>(null)
 
 const useTagsInputGroup = () => {
@@ -482,43 +508,45 @@ const useTagsInputGroup = () => {
   return context
 }
 
-const TagsInputGroup: React.FC<TagsInputGroupProps> = ({
-  className,
-  children,
-  ...rest
-}) => {
-  const textId = React.useId()
-  return (
-    <div
-      className={cn(
-        "flex flex-wrap items-center gap-x-2 gap-y-1 group-data-[orientation=column]:flex-row group-data-[orientation=row]:flex-col",
-        className
-      )}
-      {...rest}
-    >
-      {React.Children.map(children, (child, index) => {
-        if (React.isValidElement(child)) {
-          return (
-            <TagsInputGroupContext.Provider
-              value={{
-                keyIndex: index,
-                textIdPrefix: `${textId}-tag-${index}`,
-              }}
-            >
-              {child}
-            </TagsInputGroupContext.Provider>
-          )
-        }
-        return child
-      })}
-    </div>
-  )
-}
+const TagsInputGroup = React.forwardRef<HTMLDivElement, TagsInputGroupProps>(
+  ({ className, children, ...rest }, forwardedRef) => {
+    const textId = React.useId()
+    const groupRef = React.useRef<HTMLDivElement>(null)
+
+    return (
+      <div
+        ref={mergeRefs(groupRef, forwardedRef)}
+        className={cn(
+          "flex w-full flex-wrap items-center gap-x-2 gap-y-1 group-data-[orientation=column]:flex-row group-data-[orientation=row]:flex-col",
+          className
+        )}
+        {...rest}
+      >
+        {React.Children.map(children, (child, index) => {
+          if (React.isValidElement(child)) {
+            return (
+              <TagsInputGroupContext.Provider
+                value={{
+                  keyIndex: index,
+                  textIdPrefix: `${textId}-tag-${index}`,
+                  groupRef,
+                }}
+              >
+                {child}
+              </TagsInputGroupContext.Provider>
+            )
+          }
+          return child
+        })}
+      </div>
+    )
+  }
+)
 
 TagsInputGroup.displayName = "TagsInputGroup"
 
 const tagsInputItemVariants = cva(
-  "inline-flex shrink-0 items-center justify-between text-primary-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 group-data-[orientation=row]:w-full [&_svg]:shrink-0 disabled:[&_svg]:pointer-events-none",
+  "inline-flex shrink-0 items-center justify-between text-primary-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 group-data-[disabled=true]:pointer-events-none group-data-[orientation=row]:w-full group-data-[disabled=true]:cursor-not-allowed group-data-[disabled=true]:opacity-50 [&_svg]:shrink-0 disabled:[&_svg]:pointer-events-none",
   {
     variants: {
       variant: {
@@ -554,7 +582,16 @@ const tagsInputItemVariants = cva(
 
 const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
   (
-    { className, asChild = false, variant, size, shape, onKeyDown, ...rest },
+    {
+      className,
+      asChild = false,
+      variant,
+      size,
+      shape,
+      onKeyDown,
+      disabled = false,
+      ...rest
+    },
     forwardedRef
   ) => {
     const { removeTag, inputRef, isTagNonInteractive, keyBindings } =
@@ -569,9 +606,14 @@ const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
     const focusInput = React.useCallback(() => {
       if (!inputRef.current) return
       inputRef.current.focus()
-    }, [])
+    }, [inputRef])
 
-    const isFocused = () => document.activeElement === itemRef.current
+    const isFocused = React.useCallback(
+      () => document.activeElement === itemRef.current,
+      []
+    )
+
+    const isTagDisabled = isTagNonInteractive || disabled
 
     const handleTagKeyDown = React.useCallback(
       (e: React.KeyboardEvent<HTMLElement>) => {
@@ -583,10 +625,36 @@ const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
           }
         }
 
-        if (isTagNonInteractive) return
+        if (isTagDisabled) return
 
         const action = keyBindings[e.key]
         if (!action) return
+
+        const findFocusableSibling = (
+          current: HTMLElement | null,
+          direction: "previous" | "next"
+        ): HTMLElement | null => {
+          let sibling =
+            direction === "previous"
+              ? current?.previousElementSibling
+              : current?.nextElementSibling
+
+          while (sibling) {
+            const siblingDisabled =
+              sibling.getAttribute("data-disabled") === "true"
+
+            if (!siblingDisabled) {
+              return sibling as HTMLElement // Found a focusable sibling
+            }
+
+            sibling =
+              direction === "previous"
+                ? sibling.previousElementSibling
+                : sibling.nextElementSibling
+          }
+
+          return null // No valid sibling found
+        }
 
         switch (action) {
           case TagsInputKeyActions.Remove:
@@ -598,20 +666,23 @@ const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
 
           case TagsInputKeyActions.NavigateLeft: {
             e.preventDefault()
-            const prevSibling = itemRef.current
-              ?.previousElementSibling as HTMLElement | null
-            prevSibling?.focus() // Move focus to the previous tag
+            const prevSibling = findFocusableSibling(
+              itemRef.current,
+              "previous"
+            )
+            if (prevSibling) {
+              prevSibling.focus() // Focus the previous non-disabled tag
+            }
             break
           }
 
           case TagsInputKeyActions.NavigateRight: {
             e.preventDefault()
-            const nextSibling = itemRef.current
-              ?.nextElementSibling as HTMLElement
+            const nextSibling = findFocusableSibling(itemRef.current, "next")
             if (nextSibling) {
-              nextSibling.focus() // Move focus to the next tag
+              nextSibling.focus() // Focus the next non-disabled tag
             } else {
-              focusInput() // Focuses the input field
+              focusInput() // Focuses the input field if no more siblings
             }
             break
           }
@@ -620,21 +691,28 @@ const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
             break
         }
       },
-      [onKeyDown, removeTag, focusInput]
+      [
+        onKeyDown,
+        removeTag,
+        focusInput,
+        isFocused,
+        isTagDisabled,
+        keyBindings,
+        keyIndex,
+      ]
     )
 
     return (
       <Comp
         ref={mergeRefs(forwardedRef, itemRef)}
-        data-id={keyIndex}
-        tabIndex={isTagNonInteractive ? -1 : 0}
+        data-id={`${TAG_ID_PREFIX}-${keyIndex}`}
+        data-disabled={isTagDisabled}
+        tabIndex={isTagDisabled ? -1 : 0}
         aria-labelledby={textIdPrefix}
-        aria-disabled={isTagNonInteractive}
+        aria-disabled={isTagDisabled}
         onKeyDown={handleTagKeyDown}
         className={cn(
           tagsInputItemVariants({ variant, size, shape }),
-          isTagNonInteractive &&
-            "pointer-events-none cursor-not-allowed opacity-50",
           className
         )}
         {...rest}
@@ -722,9 +800,8 @@ const TagsInputInput = React.forwardRef<
       inputRef: inputContextRef,
       keyBindings,
       isTagNonInteractive,
-      removeTag,
-      tags,
     } = useTagsInput()
+    const { groupRef } = useTagsInputGroup()
 
     const isInputNonInteractive = disabled || readOnly || isTagNonInteractive
 
@@ -774,7 +851,16 @@ const TagsInputInput = React.forwardRef<
         const command = keyBindings[e.key]
         if (command === TagsInputKeyActions.Remove) {
           if (inputRef.current.value === "") {
-            removeTag(Math.max(0, tags.length - 1)) // Removes the last tag
+            if (!groupRef.current) return
+
+            const tags = groupRef.current?.querySelectorAll(
+              '[data-id]:not([data-disabled="true"])'
+            )
+
+            const lastNonDisabledTag = Array.from(tags || []).pop()
+            if (lastNonDisabledTag) {
+              return (lastNonDisabledTag as HTMLElement).focus() // Focus the last non-disabled tag
+            }
           }
         } else if (command === TagsInputKeyActions.Add) {
           e.preventDefault()
