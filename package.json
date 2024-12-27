@@ -9,8 +9,7 @@
     "dev": "turbo run dev --parallel",
     "dev:main": "turbo run dev --filter=web",
     "lint": "turbo lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "prepare": "husky"
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "workspaces": [
     "apps/*",
