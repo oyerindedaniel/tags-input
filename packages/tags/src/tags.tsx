@@ -470,10 +470,10 @@ const TagsInput = forwardRefWithGenerics(
       <div
         ref={ref}
         data-orientation={orientation}
-        data-inline={inline}
-        data-disabled={isTagNonInteractive}
+        data-inline={inline ? "" : undefined}
+        data-disabled={isTagNonInteractive ? "" : undefined}
         className={cn(
-          "group flex flex-col space-y-2 data-[inline=true]:mx-auto data-[inline=true]:max-w-[450px] data-[inline=true]:rounded-md data-[inline=true]:border data-[inline=true]:border-secondary data-[inline=true]:px-3 data-[inline=true]:py-2.5",
+          "group flex flex-col space-y-2 data-[inline]:mx-auto data-[inline]:max-w-[450px] data-[inline]:rounded-md data-[inline]:border data-[inline]:border-secondary data-[inline]:px-3 data-[inline]:py-2.5",
           className
         )}
         {...rest}
@@ -546,13 +546,11 @@ const TagsInputGroup = React.forwardRef<HTMLDivElement, TagsInputGroupProps>(
 TagsInputGroup.displayName = "TagsInputGroup"
 
 const tagsInputItemVariants = cva(
-  "inline-flex shrink-0 items-center justify-between text-primary-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 group-data-[disabled=true]:pointer-events-none group-data-[orientation=row]:w-full group-data-[disabled=true]:cursor-not-allowed group-data-[disabled=true]:opacity-50 [&_svg]:shrink-0 disabled:[&_svg]:pointer-events-none",
+  "inline-flex shrink-0 items-center justify-between text-primary-foreground transition-colors focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 data-[disabled]:pointer-events-none data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 group-data-[orientation=row]:w-full data-[disabled]:[&_svg]:pointer-events-none data-[disabled]:[&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default: "bg-primary hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
         outline:
           "border border-input bg-background text-accent-foreground hover:bg-accent hover:text-accent-foreground/80",
         secondary:
@@ -606,7 +604,7 @@ const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
     const focusInput = React.useCallback(() => {
       if (!inputRef.current) return
       inputRef.current.focus()
-    }, [inputRef])
+    }, [])
 
     const isFocused = React.useCallback(
       () => document.activeElement === itemRef.current,
@@ -706,7 +704,7 @@ const TagsInputItem = React.forwardRef<HTMLElement, TagsInputItemProps>(
       <Comp
         ref={mergeRefs(forwardedRef, itemRef)}
         data-id={`${TAG_ID_PREFIX}-${keyIndex}`}
-        data-disabled={isTagDisabled}
+        data-disabled={isTagDisabled ? "" : undefined}
         tabIndex={isTagDisabled ? -1 : 0}
         aria-labelledby={textIdPrefix}
         aria-disabled={isTagDisabled}
@@ -902,7 +900,7 @@ const TagsInputInput = React.forwardRef<
         onKeyDown={handleInputKeyDown}
         onPaste={handleInputPaste}
         className={cn(
-          "grow [[data-inline=true][data-orientation=column]_&]:basis-2/4",
+          "grow [[data-inline][data-orientation=column]_&]:basis-2/4",
           className
         )}
         {...rest}

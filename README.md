@@ -343,10 +343,7 @@ export default function CommandPaletteTags() {
   const [tags, setTags] = React.useState<string[]>([])
 
   return (
-    <TagsInput
-      value={tags}
-      onChange={(updatedTags) => setTags(updatedTags as string[])}
-    >
+    <TagsInput value={tags} onChange={setTags}>
       <TagsInputGroup>
         {tags.map((tag, idx) => (
           <TagsInputItem key={idx}>
